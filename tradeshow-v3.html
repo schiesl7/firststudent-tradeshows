@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trade Show Calendar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1923;font-family:'Georgia','Times New Roman',serif;color:#e8dcc8;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:#0f1923;}
+::-webkit-scrollbar-thumb{background:#2d3f52;border-radius:3px;}
+input,select,textarea{font-family:inherit;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:#1a2d3d;border:1px solid #c9a84c;border-radius:10px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;}
+.show-card{transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;}
+.show-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.cal-cell{min-height:100px;border:1px solid #1a2d3d;border-radius:4px;padding:4px 3px;background:#111e2b;vertical-align:top;overflow:hidden;}
+.cal-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.1s;}
+.cal-event:hover{opacity:0.8;}
+.filter-pill{cursor:pointer;transition:all 0.15s;font-family:inherit;border:none;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ── Dept normalization: map aliases → canonical name ─────────────────────────
+// "Alt" and "First Alt" are the same; "Services"/"First Serves" = "First Services"
+const DEPT_ALIAS = {
+  "Alt":           "First Alt",
+  "First Alt":     "First Alt",
+  "Services":      "First Services",
+  "First Serves":  "First Services",
+  "First Services":"First Services",
+  "DBD":           "DBD",
+  "Charter":       "Charter",
+  "Ops":           "Ops",
+  "AGM":           "AGM",
+  "Location":      "Location",
+  "Special Ed":    "Special Ed",
+};
+
+function normalizeDept(raw) {
+  if (!raw) return "";
+  return raw.split(",").map(d => {
+    const t = d.trim();
+    return DEPT_ALIAS[t] || t;
+  }).filter((v,i,a)=>a.indexOf(v)===i).join(", "); // dedupe after normalization
+}
+
+const DEPT_COLORS = {
+  "Charter":       {bg:"#fef3c7",border:"#f59e0b",text:"#92400e",cal:"#f59e0b"},
+  "First Alt":     {bg:"#dbeafe",border:"#3b82f6",text:"#1e3a8a",cal:"#3b82f6"},
+  "First Services":{bg:"#dcfce7",border:"#22c55e",text:"#14532d",cal:"#22c55e"},
+  "DBD":           {bg:"#f3e8ff",border:"#a855f7",text:"#581c87",cal:"#a855f7"},
+  "Ops":           {bg:"#fce7f3",border:"#ec4899",text:"#831843",cal:"#ec4899"},
+  "AGM":           {bg:"#fdf4ff",border:"#c084fc",text:"#6b21a8",cal:"#c084fc"},
+  "Location":      {bg:"#fff7ed",border:"#f97316",text:"#7c2d12",cal:"#f97316"},
+  "Special Ed":    {bg:"#f0fdf4",border:"#4ade80",text:"#166534",cal:"#4ade80"},
+  "default":       {bg:"#f1f5f9",border:"#94a3b8",text:"#334155",cal:"#94a3b8"},
+};
+
+// Canonical dept list for filter buttons (display order)
+const CANONICAL_DEPTS = ["Charter","First Alt","First Services","DBD","Ops","AGM","Location","Special Ed"];
+
+function getDeptColor(dept) {
+  if (!dept) return DEPT_COLORS["default"];
+  const first = normalizeDept(dept).split(",")[0].trim();
+  return DEPT_COLORS[first] || DEPT_COLORS["default"];
+}
+
+function showMatchesDept(show, filterDept) {
+  if (filterDept === "All") return true;
+  const normalized = normalizeDept(show.department);
+  return normalized.split(",").map(d=>d.trim()).includes(filterDept);
+}
+
+// ── Initial data ─────────────────────────────────────────────────────────────
+const INITIAL_SHOWS = [
+  {id:1,name:"SESPTC & VAPT",start:"2025-07-07",end:"2025-07-11",city:"Richmond, VA",department:"Alt",attendees:"Blake Smith, Maurice Murphy",notes:"Jul 10, 2025"},
+  {id:2,name:"MOAPT",start:"2025-07-08",end:"2025-07-10",city:"St. Charles, MO",department:"Location",attendees:"John Jacob",notes:"Wednesday, July 9, 3-6:30pm"},
+  {id:3,name:"STN Expo",start:"2025-07-11",end:"2025-07-16",city:"Reno, NV",department:"DBD, Alt",attendees:"Bridget Geyer, Ameur Kallel, Kyle Tyree",notes:"Mon 7/14 5-9pm, Tue 7/15 10am-1:30pm"},
+  {id:4,name:"SCAPT",start:"2025-07-13",end:"2025-07-17",city:"Myrtle Beach, SC",department:"Alt",attendees:"Rob Golematis, Maurice Murphy",notes:"Trade Show 10am-1pm"},
+  {id:5,name:"OASBO",start:"2025-07-23",end:"2025-07-25",city:"Bend, OR",department:"DBD",attendees:"Meredith Christiansen, Dan Lee, Kaleb Kahssai",notes:"Wed 7/23 4:30-6pm, Thu 7/24 8am-4:15pm"},
+  {id:6,name:"Idaho Student Transportation",start:"2025-07-28",end:"2025-07-30",city:"Garden City, ID",department:"DBD, Alt",attendees:"Meredith Christiansen, Robert Inbody",notes:"Wednesday July 30, 9am-1pm"},
+  {id:7,name:"SLRC",start:"2025-07-28",end:"2025-07-30",city:"Lake Charles, LA",department:"DBD, Services",attendees:"Ryan Brock, Edmund Dixon",notes:"Mon 7/28 1:30-5pm, Tue 7/29 7am-5:30pm"},
+  {id:8,name:"CSC Live",start:"2025-10-01",end:"2025-10-03",city:"Stockton, CA",department:"Alt, DBD",attendees:"Robert Inbody, Patricia Tuttle, Bridget Geyer",notes:"Wed 10/1-Fri 10/3"},
+  {id:9,name:"MCPSA",start:"2025-10-09",end:"2025-10-10",city:"St. Louis, MO",department:"AGM, DBD, Alt",attendees:"Lucas Terando, Rhiannon Castillo, Wendy Hill, Ami Parikh",notes:""},
+  {id:10,name:"PASA-PSBA",start:"2025-10-19",end:"2025-10-21",city:"Pocono Manor, PA",department:"DBD",attendees:"Ryan Stanley, Steve Hessler, Jean Catania, Greg Gallagher",notes:"Size: 369"},
+  {id:11,name:"NYSSBA",start:"2025-10-23",end:"2025-10-25",city:"New York, NY",department:"DBD, First Services",attendees:"Ryan Stanley, Sonja Bauer",notes:"Fri Oct 24 10am-5pm, Sat Oct 25 8:30-11:30am. Size: 1429"},
+  {id:12,name:"NAPT ACTS",start:"2025-10-31",end:"2025-11-04",city:"Grand Rapids, MI",department:"Alt",attendees:"Gregg Prettyman, Leon Fornelli, Steve Mentzer",notes:"Size: 304"},
+  {id:13,name:"NAEHCY",start:"2025-11-01",end:"2025-11-04",city:"Dallas, TX",department:"First Alt",attendees:"Blake Smith, Rob Golematis",notes:"Size: 2500"},
+  {id:14,name:"CASE",start:"2025-11-05",end:"2025-11-07",city:"Oklahoma City, OK",department:"First Alt, First Services",attendees:"Will McDermott, Desmond Poulson, Robert Inbody, Mary Beth Lisy",notes:""},
+  {id:15,name:"OSBA - OR",start:"2025-11-06",end:"2025-11-09",city:"Portland, OR",department:"DBD, First Services",attendees:"Bridget Geyer, Kaleb Kahssai",notes:"Thu Nov 6 4-6pm, Fri Nov 7 8am-4pm"},
+  {id:16,name:"TSD",start:"2025-11-09",end:"2025-11-10",city:"Frisco, TX",department:"First Alt, First Services",attendees:"Edmund Dixon, Gregg Prettyman, Rob Golematis, Laura GH",notes:"Size: 420"},
+  {id:17,name:"CASS",start:"2025-11-05",end:"2025-11-07",city:"Alberta, CA",department:"DBD",attendees:"Jonathan Weal",notes:""},
+  {id:18,name:"NASDPTS",start:"2025-11-13",end:"2025-11-16",city:"Pentagon City, VA",department:"First Alt",attendees:"Blake Smith, Gregg Prettyman",notes:""},
+  {id:19,name:"WSSDA",start:"2025-11-20",end:"2025-11-22",city:"",department:"",attendees:"Kaleb Kahssai, Bridget Geyer",notes:""},
+  {id:20,name:"IASB/IASA/IASBO",start:"2025-11-21",end:"2025-11-23",city:"",department:"",attendees:"Peter, Leon, De'Andre, Chris Coyle",notes:"6 badges"},
+  {id:21,name:"ALSASBO",start:"2025-12-08",end:"2025-12-11",city:"",department:"",attendees:"Kevin Hansen, Bridget Geyer",notes:""},
+  {id:22,name:"ACA Texoma",start:"2026-01-20",end:"2026-01-22",city:"Hunt, TX",department:"Charter",attendees:"Brian Bendarek, Angela Hernandez, Rhiannon Castillo",notes:"Size: 120"},
+  {id:23,name:"WASB",start:"2026-01-21",end:"2026-01-23",city:"Milwaukee, WI",department:"",attendees:"Peter Rudnick, Edmund Dixon",notes:""},
+  {id:24,name:"ASBOA Jan",start:"2026-01-21",end:"2026-01-23",city:"Nisku, AB",department:"",attendees:"Francis Lalonde, Yacine Belhadj, Jonathan Weal",notes:""},
+  {id:25,name:"TASA Midwinter",start:"2026-01-25",end:"2026-01-28",city:"San Antonio, TX",department:"First Services",attendees:"Edmund Dixon, Rhiannon Castillo",notes:"Size: 5673"},
+  {id:26,name:"AASA",start:"2026-02-12",end:"2026-02-14",city:"Nashville, TN",department:"DBD, First Services",attendees:"Kevin King, Rhiannon Castillo, Mary Beth Lisy, Darrel Harris",notes:"Size: ~4000"},
+  {id:27,name:"ACA",start:"2026-02-17",end:"2026-02-20",city:"San Diego, CA",department:"Charter",attendees:"Angela Hernandez, Brian Bednarek, David Chan, Tim Colleran",notes:"Size: ~1800"},
+  {id:28,name:"CCSA",start:"2026-02-23",end:"2026-02-26",city:"Long Beach, CA",department:"DBD, Alt",attendees:"Bridget Geyer, Rob Inbody",notes:""},
+  {id:29,name:"TASBO",start:"2026-02-23",end:"2026-02-27",city:"Grapevine, TX",department:"DBD, First Services",attendees:"Rhiannon Castillo, Edmund Dixon",notes:""},
+  {id:30,name:"SC CEC",start:"2026-02-25",end:"2026-02-28",city:"Myrtle Beach, SC",department:"First Serves",attendees:"Mary Beth Lisy",notes:"Size: 455"},
+  {id:31,name:"CASTO",start:"2026-02-28",end:"2026-03-02",city:"Burbank, CA",department:"First Alt, DBD",attendees:"Kaleb Kahssai, Jason Songer, Rob Inbody",notes:""},
+  {id:32,name:"GCAPT",start:"2026-02-28",end:"2026-03-01",city:"Katy, TX",department:"",attendees:"Rob Golematis, William Dodson",notes:"Size: 128"},
+  {id:33,name:"Edu-Tech",start:"2026-03-01",end:"2026-03-03",city:"Atlanta, GA",department:"Special Ed",attendees:"Gregg/Will",notes:"Awaiting acceptance"},
+  {id:34,name:"MSLBD",start:"2026-03-05",end:"2026-03-07",city:"Kansas City, MO",department:"First Services",attendees:"Edmund Dixon - not attending",notes:"No one attending this year"},
+  {id:35,name:"ACA Tri State",start:"2026-03-10",end:"2026-03-12",city:"Atlantic City, NJ",department:"Charter",attendees:"Lee Ripani, Tim Colleran, Brandon Dudley",notes:"Size: ~3000. Trade show 3/10-3/11"},
+  {id:36,name:"CEC",start:"2026-03-11",end:"2026-03-14",city:"Salt Lake City, UT",department:"First Alt",attendees:"Robert Inbody, Desmond Poulson",notes:"Trade show 3/11-3/13"},
+  {id:37,name:"COSSBA",start:"2026-03-13",end:"2026-03-15",city:"Louisville, KY",department:"First Services",attendees:"Edmund Dixon, Mary Beth Lisy",notes:"Size: 1450. Trade show 3/13-3/14"},
+  {id:38,name:"AEPA - GRREC",start:"2026-03-17",end:"2026-03-18",city:"",department:"First Alt",attendees:"Blake Smith",notes:""},
+  {id:39,name:"LASTO",start:"2026-03-18",end:"2026-03-20",city:"Marksville, LA",department:"First Serves",attendees:"James Stokes, Danny Deardan, Mary Beth Lisy, Rob Golematis",notes:""},
+  {id:40,name:"UAPT",start:"2026-03-23",end:"2026-03-25",city:"St. George, UT",department:"DBD",attendees:"Bridget Geyer, Kaleb Kahssai, Travis Lesneski",notes:"March 23, 11am-1:30pm"},
+  {id:41,name:"PASBO",start:"2026-03-24",end:"2026-03-27",city:"Pittsburgh, PA",department:"DBD, First Services",attendees:"Ryan Stanley, Matt Bonislawski, CJ Marcolini, Shawn Albright, Steve Hessler",notes:"Trade show 3/25-3/26"},
+  {id:42,name:"ACA New England",start:"2026-03-27",end:"2026-03-29",city:"Manchester, NH",department:"Charter",attendees:"Lee Ripani, Brandon Dudley",notes:"Size: ~800. Trade show 3/27-3/28"},
+  {id:43,name:"STN - Charlotte",start:"2026-03-26",end:"2026-03-31",city:"Charlotte/Concord, NC",department:"First Alt",attendees:"Blake Smith, Edmund Dixon, Jason Kierna",notes:"Trade show 3/30"},
+  {id:44,name:"LSBA",start:"2026-03-29",end:"2026-03-31",city:"Crowne Plaza - Baton Rouge",department:"First Services",attendees:"Mary Beth Lisy, Rob Golematis",notes:""},
+  {id:45,name:"CASBO",start:"2026-03-31",end:"2026-04-01",city:"San Diego, CA",department:"Ops, DBD",attendees:"Edmund Dixon, George Lee, Desmond Poulson, Bridget Geyer, Lisa Serra, Andrew Good, Erin Borda, Kim Worster",notes:""},
+  {id:46,name:"NSBA",start:"2026-04-10",end:"2026-04-12",city:"San Antonio, TX",department:"First Serves",attendees:"Bobbie Hartman",notes:"Fri Apr 10 4-6pm, Sat Apr 11 11:30am-2:30pm"},
+  {id:47,name:"MSBO",start:"2026-04-21",end:"2026-04-23",city:"Grand Rapids, MI",department:"DBD",attendees:"Edmund Dixon, Peter Rudnik",notes:"Wed Apr 22 2:15-5pm, Thu Apr 23 11am-1pm"},
+  {id:48,name:"CGCS",start:"2026-04-21",end:"2026-04-24",city:"Detroit, MI",department:"First Alt",attendees:"Sonja Bauer, Rhiannon Castillo, Gregg Prettyman",notes:""},
+  {id:49,name:"SASBO",start:"2026-04-22",end:"2026-04-24",city:"Regina, SK",department:"",attendees:"Matt Wiebe, Jonathan Weal, Justin Johanson, Ginger Graham",notes:"Trade show 4/22-4/23"},
+  {id:50,name:"CT ASBO",start:"2026-04-23",end:"2026-04-23",city:"Plantsville, CT",department:"DBD",attendees:"Ryan Stanley, Jackson Diodoardo",notes:""},
+  {id:51,name:"Oregon PTA",start:"2026-04-24",end:"2026-04-25",city:"Clackamas, OR",department:"First Alt",attendees:"Desmond Poulson, Ken Ortega",notes:""},
+  {id:52,name:"MASBO",start:"2026-05-01",end:"2026-05-31",city:"Winnipeg, MB",department:"",attendees:"Matt Wiebe, Jonathan Weal, Danielle DesAutels",notes:"May 2026"},
+  {id:53,name:"WASBO",start:"2026-05-13",end:"2026-05-15",city:"Tacoma, WA",department:"DBD, First Services",attendees:"Bridget Geyer, Kaleb Kahssai",notes:""},
+  {id:54,name:"Tri-State ASBO",start:"2026-05-20",end:"2026-05-22",city:"Burlington, VT",department:"DBD",attendees:"Ryan Stanley, Jackson Diodoardo",notes:""},
+  {id:55,name:"TAPT (Tennessee)",start:"2026-06-01",end:"2026-06-03",city:"Pigeon Forge, TN",department:"First Services",attendees:"Mary Beth Lisy, Tom Fowee",notes:""},
+  {id:56,name:"CSPTA",start:"2026-06-08",end:"2026-06-10",city:"Denver, CO",department:"DBD, First Services, First Alt",attendees:"Bridget Geyer, Kaleb Kahssai, Desmond Poulson",notes:""},
+  {id:57,name:"FAPT",start:"2026-06-14",end:"2026-06-18",city:"Orlando, FL",department:"First Alt, First Serves",attendees:"Mary Beth Lisy, Rob Golematis, Hugo Donis",notes:""},
+  {id:58,name:"GAPT",start:"2026-06-15",end:"2026-06-17",city:"Jekyll Island, GA",department:"",attendees:"Hugo Donis, Emily Giles, Jason Reaves, Kelly Eaker",notes:""},
+  {id:59,name:"ASBOA Jun",start:"2026-06-15",end:"2026-06-17",city:"Calgary, AB",department:"",attendees:"Jonathan Weal, Faisel Malik, Rick Ahee, Mike Sakic",notes:""},
+  {id:60,name:"NCPTA",start:"2026-06-15",end:"2026-06-18",city:"Asheville, NC",department:"First Alt",attendees:"Mary Beth Lisy, Blake Smith",notes:""},
+  {id:61,name:"TAA",start:"2026-06-16",end:"2026-06-19",city:"Flagstaff, AZ",department:"First Alt",attendees:"Bridget Geyer, Travis Lesneski, Josh Kennington",notes:"Trade show 6/17"},
+  {id:62,name:"TAPT (Texas)",start:"2026-06-26",end:"2026-06-30",city:"The Woodlands, TX",department:"First Alt",attendees:"Rhiannon Castillo, Rob Golematis, William Dodson",notes:""},
+  {id:63,name:"MSAPT",start:"2026-06-24",end:"2026-06-26",city:"Tupelo, MS",department:"",attendees:"Rhiannon Castillo, Emily Giles, Stephanie",notes:""},
+  {id:64,name:"WAPT",start:"2026-06-28",end:"2026-07-01",city:"Kennewick, WA",department:"First Alt",attendees:"Bridget Geyer, Branden Seeberger",notes:""},
+  {id:65,name:"MIAPT",start:"2026-06-30",end:"2026-06-30",city:"Boyne Mountain, MI",department:"",attendees:"",notes:""},
+];
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function getStored() {
+  try { const s=localStorage.getItem("tradeshows_v2"); return s?JSON.parse(s):null; } catch(e){return null;}
+}
+function saveStored(shows) {
+  try { localStorage.setItem("tradeshows_v2",JSON.stringify(shows)); } catch(e){}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtRange(start, end) {
+  const s=new Date(start+"T12:00:00"), e=new Date(end+"T12:00:00");
+  const o={month:"short",day:"numeric"};
+  if(start===end) return s.toLocaleDateString("en-US",o);
+  if(s.getMonth()===e.getMonth()&&s.getFullYear()===e.getFullYear())
+    return `${s.toLocaleDateString("en-US",o)} – ${e.getDate()}`;
+  return `${s.toLocaleDateString("en-US",o)} – ${e.toLocaleDateString("en-US",o)}`;
+}
+
+// ── Edit Modal ────────────────────────────────────────────────────────────────
+function EditModal({show, onSave, onClose, onDelete}) {
+  const [form, setForm] = useState(show ? {...show} : {name:"",start:"",end:"",city:"",department:"",attendees:"",notes:""});
+  const isNew = !show;
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const lbl = {fontSize:12,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"block"};
+  const inp = {width:"100%",background:"#0f1923",border:"1px solid #2d3f52",borderRadius:6,padding:"8px 12px",color:"#e8dcc8",fontSize:14,outline:"none"};
+  const DEPT_OPTIONS = ["","Charter","First Alt","First Services","DBD","Ops","AGM","Location","Special Ed"];
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div style={{padding:"18px 22px",borderBottom:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h2 style={{color:"#c9a84c",fontSize:17}}>{isNew?"Add New Show":"Edit Show"}</h2>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#8a9bb0",fontSize:24,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+        <div style={{padding:"18px 22px",display:"grid",gap:14}}>
+          <div>
+            <label style={lbl}>Show Name</label>
+            <input value={form.name||""} onChange={e=>set("name",e.target.value)} style={inp}/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div><label style={lbl}>Start Date</label><input type="date" value={form.start||""} onChange={e=>set("start",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>End Date</label><input type="date" value={form.end||""} onChange={e=>set("end",e.target.value)} style={inp}/></div>
+          </div>
+          <div>
+            <label style={lbl}>City</label>
+            <input value={form.city||""} onChange={e=>set("city",e.target.value)} style={inp}/>
+          </div>
+          <div>
+            <label style={lbl}>Primary Department
+              <span style={{color:"#4a5a6a",marginLeft:8,textTransform:"none",letterSpacing:0,fontSize:11}}>Additional depts can be added in the text field below</span>
+            </label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+              {DEPT_OPTIONS.filter(d=>d).map(d=>{
+                const active = normalizeDept(form.department||"").split(",").map(x=>x.trim()).includes(d);
+                const c = DEPT_COLORS[d]||DEPT_COLORS.default;
+                return (
+                  <button key={d} onClick={()=>{
+                    const cur = normalizeDept(form.department||"").split(",").map(x=>x.trim()).filter(x=>x);
+                    const next = active ? cur.filter(x=>x!==d) : [...cur,d];
+                    set("department", next.join(", "));
+                  }} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,
+                    background:active?c.bg:"transparent",color:active?c.text:"#8a9bb0",border:`1.5px solid ${active?c.border:"#2d3f52"}`}}>
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+            <input value={form.department||""} onChange={e=>set("department",e.target.value)} style={{...inp,fontSize:12}} placeholder="e.g. DBD, First Alt"/>
+          </div>
+          <div>
+            <label style={lbl}>Attendees <span style={{color:"#4a5a6a",textTransform:"none",letterSpacing:0,fontSize:11}}>(comma-separated)</span></label>
+            <textarea rows={2} value={form.attendees||""} onChange={e=>set("attendees",e.target.value)} style={{...inp,resize:"vertical"}}/>
+          </div>
+          <div>
+            <label style={lbl}>Notes</label>
+            <textarea rows={2} value={form.notes||""} onChange={e=>set("notes",e.target.value)} style={{...inp,resize:"vertical"}}/>
+          </div>
+        </div>
+        <div style={{padding:"14px 22px",borderTop:"1px solid #2d3f52",display:"flex",justifyContent:"space-between"}}>
+          <div>{!isNew&&<button onClick={()=>onDelete(show.id)} style={{background:"#3d1515",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Delete</button>}</div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onClose} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Cancel</button>
+            <button onClick={()=>onSave({...form,department:normalizeDept(form.department||"")})} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dept Badges ───────────────────────────────────────────────────────────────
+function DeptBadges({department, size="sm"}) {
+  if (!department) return <span style={{fontSize:11,color:"#4a5a6a",fontStyle:"italic"}}>No dept</span>;
+  const norm = normalizeDept(department);
+  return (
+    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+      {norm.split(",").map(d=>{
+        const t=d.trim(); const c=DEPT_COLORS[t]||DEPT_COLORS.default;
+        return <span key={t} style={{fontSize:size==="xs"?9:10,fontWeight:700,padding:size==="xs"?"2px 6px":"2px 8px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`,textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>{t}</span>;
+      })}
+    </div>
+  );
+}
+
+// ── Dept Filter Bar ───────────────────────────────────────────────────────────
+function DeptFilter({value, onChange, extra}) {
+  const btnBase={padding:"5px 13px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",background:"transparent",color:"#8a9bb0",border:"1.5px solid #2d3f52",fontWeight:400};
+  const btnOn={...btnBase,background:"#c9a84c",color:"#0f1923",border:"1.5px solid #c9a84c",fontWeight:700};
+  return (
+    <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+      <span style={{fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1}}>Dept</span>
+      {["All",...CANONICAL_DEPTS].map(d=><button key={d} className="filter-pill" onClick={()=>onChange(d)} style={value===d?btnOn:btnBase}>{d}</button>)}
+      {extra}
+    </div>
+  );
+}
+
+// ── Show Card ─────────────────────────────────────────────────────────────────
+function ShowCard({show, onEdit}) {
+  const c = getDeptColor(show.department);
+  return (
+    <div className="show-card" onClick={()=>onEdit(show)} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderLeft:`4px solid ${c.border}`,borderRadius:8,padding:"14px 16px"}}>
+      <h3 style={{fontSize:15,fontWeight:700,color:"#e8dcc8",margin:"0 0 5px",lineHeight:1.3}}>{show.name}</h3>
+      <div style={{fontSize:12,color:"#c9a84c",fontWeight:600,marginBottom:3,fontStyle:"italic"}}>{fmtRange(show.start,show.end)}</div>
+      {show.city&&<div style={{fontSize:12,color:"#8a9bb0",marginBottom:7}}>📍 {show.city}</div>}
+      <DeptBadges department={show.department}/>
+    </div>
+  );
+}
+
+// ── Cards View ────────────────────────────────────────────────────────────────
+function CardView({shows, onEdit}) {
+  const [dFilter, setDFilter] = useState("All");
+  const filtered = shows.filter(s=>showMatchesDept(s,dFilter));
+  const byMonth = {};
+  filtered.forEach(s=>{
+    const m=new Date(s.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"});
+    if(!byMonth[m])byMonth[m]=[];
+    byMonth[m].push(s);
+  });
+  return (
+    <div>
+      <div style={{marginBottom:24}}><DeptFilter value={dFilter} onChange={setDFilter}/></div>
+      {Object.entries(byMonth).map(([month,items])=>(
+        <div key={month} style={{marginBottom:40}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+            <h2 style={{fontSize:19,fontWeight:700,color:"#c9a84c",textTransform:"uppercase",letterSpacing:3,whiteSpace:"nowrap"}}>{month}</h2>
+            <div style={{flex:1,height:1,background:"linear-gradient(to right,#c9a84c44,transparent)"}}/>
+            <span style={{fontSize:12,color:"#8a9bb0"}}>{items.length} show{items.length!==1?"s":""}</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:12}}>
+            {items.map(s=><ShowCard key={s.id} show={s} onEdit={onEdit}/>)}
+          </div>
+        </div>
+      ))}
+      {Object.keys(byMonth).length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No shows match this filter.</div>}
+    </div>
+  );
+}
+
+// ── Attendees View ────────────────────────────────────────────────────────────
+function AttendeesView({shows, onEdit}) {
+  const [search, setSearch] = useState("");
+  const [dFilter, setDFilter] = useState("All");
+  const filtShows = shows.filter(s=>showMatchesDept(s,dFilter));
+  const personMap = {};
+  filtShows.forEach(show=>{
+    if(!show.attendees) return;
+    show.attendees.split(",").forEach(raw=>{
+      const name=raw.trim(); if(!name) return;
+      if(!personMap[name]) personMap[name]=[];
+      personMap[name].push(show);
+    });
+  });
+  const sorted = Object.entries(personMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const filtered = search ? sorted.filter(([n])=>n.toLowerCase().includes(search.toLowerCase())) : sorted;
+  return (
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20,alignItems:"center"}}>
+        <DeptFilter value={dFilter} onChange={setDFilter}/>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name…"
+          style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:6,padding:"7px 14px",color:"#e8dcc8",fontSize:13,outline:"none",fontFamily:"inherit",width:200}}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12}}>
+        {filtered.map(([name,personShows])=>(
+          <div key={name} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:8,padding:"14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+              <h3 style={{fontSize:14,fontWeight:700,color:"#c9a84c"}}>{name}</h3>
+              <span style={{fontSize:11,color:"#8a9bb0",background:"#0f1923",padding:"2px 8px",borderRadius:20,border:"1px solid #2d3f52",whiteSpace:"nowrap"}}>{personShows.length} show{personShows.length!==1?"s":""}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {personShows.sort((a,b)=>a.start.localeCompare(b.start)).map(s=>{
+                const c=getDeptColor(s.department);
+                return (
+                  <div key={s.id} onClick={()=>onEdit(s)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 9px",background:"#0f1923",borderRadius:6,cursor:"pointer",border:`1px solid #1e3040`}}>
+                    <div style={{minWidth:0,flex:1}}>
+                      <div style={{fontSize:12,color:"#e8dcc8",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
+                      <div style={{fontSize:11,color:"#8a9bb0"}}>{fmtRange(s.start,s.end)}{s.city?` · ${s.city}`:""}</div>
+                    </div>
+                    <div style={{marginLeft:8,flexShrink:0}}><DeptBadges department={s.department} size="xs"/></div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      {filtered.length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No attendees found.</div>}
+    </div>
+  );
+}
+
+// ── Calendar View ─────────────────────────────────────────────────────────────
+function CalendarView({shows, onEdit}) {
+  const today = new Date();
+  const [year, setYear]   = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [dFilter, setDFilter] = useState("All");
+
+  const prevMonth = ()=>{ if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); };
+  const nextMonth = ()=>{ if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); };
+  const goToday   = ()=>{ setYear(today.getFullYear()); setMonth(today.getMonth()); };
+
+  const firstDay = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+
+  const filtShows = shows.filter(s=>showMatchesDept(s,dFilter));
+
+  function showsOnDay(day) {
+    const ds=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    return filtShows.filter(s=>s.start<=ds&&s.end>=ds);
+  }
+
+  const monthName = new Date(year,month,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  return (
+    <div>
+      {/* Controls */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={prevMonth} style={{background:"#1a2d3d",border:"1px solid #2d3f52",color:"#c9a84c",width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:18,lineHeight:1}}>‹</button>
+          <h2 style={{fontSize:20,fontWeight:700,color:"#c9a84c",letterSpacing:2,minWidth:220,textAlign:"center"}}>{monthName.toUpperCase()}</h2>
+          <button onClick={nextMonth} style={{background:"#1a2d3d",border:"1px solid #2d3f52",color:"#c9a84c",width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:18,lineHeight:1}}>›</button>
+          <button onClick={goToday} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",marginLeft:4}}>Today</button>
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <DeptFilter value={dFilter} onChange={setDFilter}/>
+      </div>
+
+      {/* Day headers */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>
+        {DAYS.map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,padding:"4px 0"}}>{d}</div>)}
+      </div>
+
+      {/* Grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+        {Array(firstDay).fill(null).map((_,i)=>(
+          <div key={"x"+i} style={{minHeight:100,background:"#0a131c",borderRadius:4,border:"1px solid #111e2b"}}/>
+        ))}
+        {Array(daysInMonth).fill(null).map((_,i)=>{
+          const day=i+1;
+          const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
+          const dayShows=showsOnDay(day);
+          const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          return (
+            <div key={day} className="cal-cell" style={{background:isToday?"#1c2f40":"#111e2b",border:isToday?"1.5px solid #c9a84c":"1px solid #1a2d3d"}}>
+              <div style={{fontSize:11,color:isToday?"#c9a84c":"#3a4f62",fontWeight:isToday?700:400,textAlign:"right",marginBottom:3}}>{day}</div>
+              {dayShows.slice(0,4).map(s=>{
+                const c=getDeptColor(s.department);
+                const isStart=s.start===dateStr;
+                return (
+                  <div key={s.id} className="cal-event" onClick={()=>onEdit(s)}
+                    title={`${s.name} · ${fmtRange(s.start,s.end)}${s.city?" · "+s.city:""}`}
+                    style={{background:c.cal+"28",borderLeft:`2px solid ${c.cal}`,color:c.cal,fontWeight:isStart?700:400,opacity:isStart?1:0.55}}>
+                    {isStart ? s.name : "·"}
+                  </div>
+                );
+              })}
+              {dayShows.length>4&&<div style={{fontSize:9,color:"#8a9bb0",paddingLeft:3}}>+{dayShows.length-4} more</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Color legend */}
+      <div style={{marginTop:16,display:"flex",flexWrap:"wrap",gap:6}}>
+        {CANONICAL_DEPTS.map(k=>{const c=DEPT_COLORS[k]||DEPT_COLORS.default;return(
+          <span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`}}>{k}</span>
+        );})}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [shows, setShows] = useState(()=>{
+    const stored = getStored();
+    // normalize all dept values on load
+    return (stored||INITIAL_SHOWS).map(s=>({...s,department:normalizeDept(s.department||"")}));
+  });
+  const [tab, setTab] = useState("calendar");
+  const [editShow, setEditShow] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isNew, setIsNew] = useState(false);
+  const [nextId, setNextId] = useState(()=>Math.max(0,...(getStored()||INITIAL_SHOWS).map(s=>s.id))+1);
+
+  useEffect(()=>{ saveStored(shows); },[shows]);
+
+  const sorted = [...shows].sort((a,b)=>a.start.localeCompare(b.start));
+
+  const openEdit = s => { setEditShow(s); setIsNew(false); setModalOpen(true); };
+  const openNew  = () => { setEditShow(null); setIsNew(true); setModalOpen(true); };
+
+  const handleSave = form => {
+    const normalized = {...form, department: normalizeDept(form.department||"")};
+    if (isNew) {
+      setShows(s=>[...s,{...normalized,id:nextId}].sort((a,b)=>a.start.localeCompare(b.start)));
+      setNextId(n=>n+1);
+    } else {
+      setShows(s=>s.map(x=>x.id===normalized.id?normalized:x));
+    }
+    setModalOpen(false);
+  };
+
+  const handleDelete = id => {
+    if(confirm("Delete this show?")){ setShows(s=>s.filter(x=>x.id!==id)); setModalOpen(false); }
+  };
+
+  const TABS = [{id:"calendar",label:"📅 Calendar"},{id:"cards",label:"📋 Cards"},{id:"attendees",label:"👥 Attendees"}];
+  const tabBase={padding:"10px 20px",borderRadius:"6px 6px 0 0",fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",background:"transparent",color:"#8a9bb0",fontWeight:400,transition:"all 0.15s"};
+  const tabOn={...tabBase,background:"#1a2d3d",color:"#c9a84c",fontWeight:700,borderBottom:"2px solid #c9a84c"};
+
+  return (
+    <div style={{minHeight:"100vh",background:"#0f1923"}}>
+      <div style={{background:"linear-gradient(135deg,#1a2d3d,#0f1923)",borderBottom:"2px solid #c9a84c",padding:"22px 32px 0"}}>
+        <div style={{maxWidth:1280,margin:"0 auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <div>
+              <h1 style={{fontSize:28,fontWeight:700,color:"#c9a84c",letterSpacing:"-0.5px"}}>Trade Show Calendar</h1>
+              <p style={{color:"#8a9bb0",fontSize:13,marginTop:2}}>{shows.length} conferences · rolling calendar</p>
+            </div>
+            <button onClick={openNew} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"9px 18px",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}}>+ Add Show</button>
+          </div>
+          <div style={{display:"flex",gap:2,marginTop:14}}>
+            {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={tab===t.id?tabOn:tabBase}>{t.label}</button>)}
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:1280,margin:"0 auto",padding:"24px 32px"}}>
+        {tab==="calendar"  && <CalendarView  shows={sorted} onEdit={openEdit}/>}
+        {tab==="cards"     && <CardView      shows={sorted} onEdit={openEdit}/>}
+        {tab==="attendees" && <AttendeesView shows={sorted} onEdit={openEdit}/>}
+      </div>
+      {modalOpen && <EditModal show={isNew?null:editShow} onSave={handleSave} onClose={()=>setModalOpen(false)} onDelete={handleDelete}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
