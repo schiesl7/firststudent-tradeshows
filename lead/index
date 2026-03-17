@@ -8,10 +8,9 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0f1923;font-family:'Georgia','Times New Roman',serif;color:#e8dcc8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:32px 16px;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,0.08) 0%,transparent 60%);pointer-events:none;}
-.card{background:#1a2d3d;border:1px solid #c9a84c;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);position:relative;}
+.card{background:#1a2d3d;border:1px solid #c9a84c;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);position:relative;z-index:1;}
 .card-header{padding:28px 28px 20px;background:linear-gradient(135deg,rgba(201,168,76,0.1) 0%,transparent 60%);border-bottom:1px solid #2d3f52;text-align:center;}
-.logo{width:48px;height:48px;background:#c9a84c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#0f1923;margin:0 auto 14px;font-family:Georgia,serif;}
-input,select,textarea{font-family:inherit;}
+.logo{width:48px;height:48px;background:#c9a84c;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#0f1923;margin-bottom:14px;}
 .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .form-label{font-size:10px;color:#8a9bb0;text-transform:uppercase;letter-spacing:1px;}
 .form-input,.form-select,.form-textarea{background:#0f1923;border:1px solid #2d3f52;border-radius:6px;color:#e8dcc8;font-family:inherit;font-size:15px;padding:11px 14px;outline:none;width:100%;transition:border-color 0.2s;}
@@ -23,13 +22,10 @@ input,select,textarea{font-family:inherit;}
 .section-label{font-size:10px;color:#4a5a6a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;font-weight:700;}
 .btn-submit{width:100%;padding:14px;background:#c9a84c;color:#0f1923;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:16px;cursor:pointer;transition:all 0.2s;margin-top:6px;}
 .btn-submit:hover{background:#e8c25a;transform:translateY(-1px);}
-.btn-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
 .opt-in{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;}
 .opt-in input{margin-top:3px;accent-color:#c9a84c;flex-shrink:0;}
 .opt-in label{font-size:12px;color:#8a9bb0;line-height:1.5;}
-.success-state{display:none;text-align:center;padding:52px 28px;}
-.error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none;}
-.footer-note{margin-top:20px;text-align:center;font-size:11px;color:#2d3f52;}
+.footer-note{margin-top:20px;text-align:center;font-size:11px;color:#2d3f52;position:relative;z-index:1;}
 @media(max-width:480px){.form-row{grid-template-columns:1fr;}.card-header{padding:20px 20px 16px;}}
 </style>
 </head>
@@ -38,149 +34,71 @@ input,select,textarea{font-family:inherit;}
   <div class="card-header">
     <div class="logo">FS</div>
     <div style="font-size:22px;font-weight:700;color:#c9a84c;letter-spacing:-0.5px;margin-bottom:5px">Let's <span style="color:#e8dcc8">Connect</span></div>
-    <div style="font-size:13px;color:#8a9bb0" id="showTagline">First Student — North America's Largest Student Transporter</div>
+    <div style="font-size:13px;color:#8a9bb0">First Student — North America's Largest Student Transporter</div>
     <div id="showBadge" style="display:none;margin-top:10px">
-      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);padding:5px 14px;border-radius:20px;font-size:11px;color:#c9a84c;letter-spacing:0.5px">📍 <span id="showBadgeText"></span></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);padding:5px 14px;border-radius:20px;font-size:11px;color:#c9a84c">📍 <span id="showBadgeText"></span></span>
     </div>
   </div>
+  <div style="padding:24px 28px">
+    <form action="https://formspree.io/f/xkoqpppw" method="POST">
+      <input type="hidden" name="_subject" id="fSubject" value="New Lead — Trade Show">
+      <input type="hidden" name="Trade Show" id="fShowName" value="Trade Show">
+      <input type="hidden" name="_next" value="https://schiesl7.github.io/firststudent-tradeshows/lead/thanks.html">
  
-  <div id="formState" style="padding:24px 28px">
-    <div id="errorBanner" class="error-banner">Something went wrong — please try again or check your connection.</div>
+      <div class="section-label">Your Info</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First Name *</label><input type="text" class="form-input" name="First Name" placeholder="Jane" required autocomplete="given-name"></div>
+        <div class="form-group"><label class="form-label">Last Name *</label><input type="text" class="form-input" name="Last Name" placeholder="Smith" required autocomplete="family-name"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Title / Role</label><input type="text" class="form-input" name="Title" placeholder="Director of Transportation" autocomplete="organization-title"></div>
+      <div class="form-group"><label class="form-label">School District / Organization *</label><input type="text" class="form-input" name="District / Org" placeholder="Springfield Unified School District" required autocomplete="organization"></div>
  
-    <div class="section-label">Your Info</div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">First Name *</label><input type="text" class="form-input" id="fFirst" placeholder="Jane" autocomplete="given-name"></div>
-      <div class="form-group"><label class="form-label">Last Name *</label><input type="text" class="form-input" id="fLast" placeholder="Smith" autocomplete="family-name"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Title / Role</label><input type="text" class="form-input" id="fTitle" placeholder="Director of Transportation" autocomplete="organization-title"></div>
-    <div class="form-group"><label class="form-label">School District / Organization *</label><input type="text" class="form-input" id="fDistrict" placeholder="Springfield Unified School District" autocomplete="organization"></div>
+      <hr class="divider">
+      <div class="section-label">Contact</div>
+      <div class="form-group"><label class="form-label">Email Address *</label><input type="email" class="form-input" name="Email" placeholder="jane@district.edu" required autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-input" name="Phone" placeholder="(555) 000-0000" autocomplete="tel"></div>
  
-    <hr class="divider">
-    <div class="section-label">Contact</div>
-    <div class="form-group"><label class="form-label">Email Address *</label><input type="email" class="form-input" id="fEmail" placeholder="jane@district.edu" autocomplete="email"></div>
-    <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-input" id="fPhone" placeholder="(555) 000-0000" autocomplete="tel"></div>
+      <hr class="divider">
+      <div class="section-label">How Can We Help?</div>
+      <div class="form-group">
+        <label class="form-label">Area of Interest</label>
+        <select class="form-select" name="Interest">
+          <option value="">Select one…</option>
+          <option>Home-to-School Transportation</option>
+          <option>Fleet as a Service</option>
+          <option>First Alt (Alternative Transportation)</option>
+          <option>Special Needs / SPED Transportation</option>
+          <option>Charter / Field Trips</option>
+          <option>Contract Renewal / RFP</option>
+          <option>Just exploring options</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Notes / Questions</label><textarea class="form-textarea" name="Notes" placeholder="Anything specific you'd like to discuss?"></textarea></div>
  
-    <hr class="divider">
-    <div class="section-label">How Can We Help?</div>
-    <div class="form-group">
-      <label class="form-label">Area of Interest</label>
-      <select class="form-select" id="fInterest">
-        <option value="">Select one…</option>
-        <option>Home-to-School Transportation</option>
-        <option>Fleet as a Service</option>
-        <option>First Alt (Alternative Transportation)</option>
-        <option>Special Needs / SPED Transportation</option>
-        <option>Charter / Field Trips</option>
-        <option>Contract Renewal / RFP</option>
-        <option>Just exploring options</option>
-      </select>
-    </div>
-    <div class="form-group"><label class="form-label">Notes / Questions</label><textarea class="form-textarea" id="fNotes" placeholder="Anything specific you'd like to discuss?"></textarea></div>
- 
-    <div class="opt-in">
-      <input type="checkbox" id="fOptIn" checked>
-      <label for="fOptIn">I'm interested in learning more from First Student and agree to be contacted about transportation solutions.</label>
-    </div>
-    <button class="btn-submit" id="submitBtn" onclick="submitLead()">Submit & Connect →</button>
-  </div>
- 
-  <div class="success-state" id="successState">
-    <div style="font-size:52px;margin-bottom:16px">✅</div>
-    <div style="font-size:22px;font-weight:700;color:#c9a84c;margin-bottom:8px">Thanks for stopping by!</div>
-    <div style="font-size:14px;color:#8a9bb0;line-height:1.7">We've got your info — someone from the First Student team will be in touch soon.<br><br>We're excited to talk transportation with you.</div>
+      <div class="opt-in">
+        <input type="checkbox" name="Opt In" value="Yes" id="fOptIn" checked>
+        <label for="fOptIn">I'm interested in learning more from First Student and agree to be contacted about transportation solutions.</label>
+      </div>
+      <button type="submit" class="btn-submit">Submit &amp; Connect →</button>
+    </form>
   </div>
 </div>
 <div class="footer-note">First Student · North America's Largest School Transportation Provider</div>
- 
 <script>
-const FORMSPREE_URL = "https://formspree.io/f/xkoqpppw";
-const SHOWS_KEY = "fs_pms_v3";
- 
-function getShowId() {
-  return new URLSearchParams(window.location.search).get("show") || "unknown";
-}
- 
-function getShowName(id) {
+(function(){
+  const id = new URLSearchParams(window.location.search).get("show") || "";
+  if (!id) return;
   try {
-    const shows = JSON.parse(localStorage.getItem(SHOWS_KEY) || "[]");
-    const s = shows.find(x => String(x.id) === String(id));
-    return s ? s.name : id;
-  } catch(e) { return id; }
-}
- 
-(function init() {
-  const id = getShowId();
-  const name = getShowName(id);
-  if (id !== "unknown") {
+    const shows = JSON.parse(localStorage.getItem("fs_pms_v3") || "[]");
+    const show = shows.find(s => String(s.id) === String(id));
+    const name = show ? show.name : id;
+    document.getElementById("fSubject").value = "New Lead — " + name;
+    document.getElementById("fShowName").value = name;
     document.getElementById("showBadge").style.display = "block";
     document.getElementById("showBadgeText").textContent = name;
-    document.title = `First Student — ${name}`;
-  }
+    document.title = "First Student — " + name;
+  } catch(e) {}
 })();
- 
-async function submitLead() {
-  const first    = document.getElementById("fFirst").value.trim();
-  const last     = document.getElementById("fLast").value.trim();
-  const email    = document.getElementById("fEmail").value.trim();
-  const district = document.getElementById("fDistrict").value.trim();
- 
-  if (!first || !last || !email || !district) {
-    alert("Please fill in your name, district, and email.");
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert("Please enter a valid email address.");
-    return;
-  }
- 
-  const showId   = getShowId();
-  const showName = getShowName(showId);
-  const btn       = document.getElementById("submitBtn");
-  const errBanner = document.getElementById("errorBanner");
- 
-  btn.disabled = true;
-  btn.textContent = "Submitting…";
-  errBanner.style.display = "none";
- 
-  const payload = {
-    _subject: `New Lead — ${showName}`,
-    "Trade Show":     showName,
-    "First Name":     first,
-    "Last Name":      last,
-    "Title":          document.getElementById("fTitle").value.trim()  || "—",
-    "District / Org": district,
-    "Email":          email,
-    "Phone":          document.getElementById("fPhone").value.trim()  || "—",
-    "Interest":       document.getElementById("fInterest").value      || "—",
-    "Notes":          document.getElementById("fNotes").value.trim()  || "—",
-    "Opt In":         document.getElementById("fOptIn").checked ? "Yes" : "No",
-    "Submitted At":   new Date().toLocaleString("en-US", {
-      month:"short", day:"numeric", year:"numeric",
-      hour:"numeric", minute:"2-digit", timeZoneName:"short"
-    }),
-  };
- 
-  try {
-    const res = await fetch(FORMSPREE_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body:    JSON.stringify(payload),
-    });
- 
-    if (res.ok) {
-      document.getElementById("formState").style.display = "none";
-      document.getElementById("successState").style.display = "block";
-    } else {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data?.error || "Server error");
-    }
-  } catch(err) {
-    console.error("Formspree error:", err);
-    btn.disabled = false;
-    btn.textContent = "Submit & Connect →";
-    errBanner.style.display = "block";
-  }
-}
 </script>
 </body>
 </html>
