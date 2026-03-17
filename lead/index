@@ -23,10 +23,12 @@ input,select,textarea{font-family:inherit;}
 .section-label{font-size:10px;color:#4a5a6a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;font-weight:700;}
 .btn-submit{width:100%;padding:14px;background:#c9a84c;color:#0f1923;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:16px;cursor:pointer;transition:all 0.2s;margin-top:6px;}
 .btn-submit:hover{background:#e8c25a;transform:translateY(-1px);}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
 .opt-in{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;}
 .opt-in input{margin-top:3px;accent-color:#c9a84c;flex-shrink:0;}
 .opt-in label{font-size:12px;color:#8a9bb0;line-height:1.5;}
 .success-state{display:none;text-align:center;padding:52px 28px;}
+.error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none;}
 .footer-note{margin-top:20px;text-align:center;font-size:11px;color:#2d3f52;}
 @media(max-width:480px){.form-row{grid-template-columns:1fr;}.card-header{padding:20px 20px 16px;}}
 </style>
@@ -43,6 +45,8 @@ input,select,textarea{font-family:inherit;}
   </div>
  
   <div id="formState" style="padding:24px 28px">
+    <div id="errorBanner" class="error-banner">Something went wrong — please try again or check your connection.</div>
+ 
     <div class="section-label">Your Info</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">First Name *</label><input type="text" class="form-input" id="fFirst" placeholder="Jane" autocomplete="given-name"></div>
@@ -77,7 +81,7 @@ input,select,textarea{font-family:inherit;}
       <input type="checkbox" id="fOptIn" checked>
       <label for="fOptIn">I'm interested in learning more from First Student and agree to be contacted about transportation solutions.</label>
     </div>
-    <button class="btn-submit" onclick="submitLead()">Submit & Connect →</button>
+    <button class="btn-submit" id="submitBtn" onclick="submitLead()">Submit & Connect →</button>
   </div>
  
   <div class="success-state" id="successState">
@@ -89,53 +93,93 @@ input,select,textarea{font-family:inherit;}
 <div class="footer-note">First Student · North America's Largest School Transportation Provider</div>
  
 <script>
-const LEADS_KEY="fs_leads_v3";
-const SHOWS_KEY="fs_pms_v3";
+const FORMSPREE_URL = "https://formspree.io/f/xkoqpppw";
+const SHOWS_KEY = "fs_pms_v3";
  
-function getShowId(){return new URLSearchParams(window.location.search).get("show")||"unknown";}
-function getShowName(id){
-  try{
-    const shows=JSON.parse(localStorage.getItem(SHOWS_KEY)||"[]");
-    const s=shows.find(x=>String(x.id)===String(id));
-    return s?s.name:id;
-  }catch(e){return id;}
+function getShowId() {
+  return new URLSearchParams(window.location.search).get("show") || "unknown";
 }
  
-(function init(){
-  const id=getShowId();
-  const name=getShowName(id);
-  if(id!=="unknown"){
-    document.getElementById("showBadge").style.display="block";
-    document.getElementById("showBadgeText").textContent=name;
-    document.title=`First Student — ${name}`;
+function getShowName(id) {
+  try {
+    const shows = JSON.parse(localStorage.getItem(SHOWS_KEY) || "[]");
+    const s = shows.find(x => String(x.id) === String(id));
+    return s ? s.name : id;
+  } catch(e) { return id; }
+}
+ 
+(function init() {
+  const id = getShowId();
+  const name = getShowName(id);
+  if (id !== "unknown") {
+    document.getElementById("showBadge").style.display = "block";
+    document.getElementById("showBadgeText").textContent = name;
+    document.title = `First Student — ${name}`;
   }
 })();
  
-function submitLead(){
-  const first=document.getElementById("fFirst").value.trim();
-  const last=document.getElementById("fLast").value.trim();
-  const email=document.getElementById("fEmail").value.trim();
-  const district=document.getElementById("fDistrict").value.trim();
-  if(!first||!last||!email||!district){alert("Please fill in your name, district, and email.");return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert("Please enter a valid email address.");return;}
-  const lead={
-    showId:getShowId(),
-    firstName:first,lastName:last,
-    title:document.getElementById("fTitle").value.trim(),
-    district,email,
-    phone:document.getElementById("fPhone").value.trim(),
-    interest:document.getElementById("fInterest").value,
-    notes:document.getElementById("fNotes").value.trim(),
-    optIn:document.getElementById("fOptIn").checked,
-    submittedAt:Date.now()
+async function submitLead() {
+  const first    = document.getElementById("fFirst").value.trim();
+  const last     = document.getElementById("fLast").value.trim();
+  const email    = document.getElementById("fEmail").value.trim();
+  const district = document.getElementById("fDistrict").value.trim();
+ 
+  if (!first || !last || !email || !district) {
+    alert("Please fill in your name, district, and email.");
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert("Please enter a valid email address.");
+    return;
+  }
+ 
+  const showId   = getShowId();
+  const showName = getShowName(showId);
+  const btn       = document.getElementById("submitBtn");
+  const errBanner = document.getElementById("errorBanner");
+ 
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  errBanner.style.display = "none";
+ 
+  const payload = {
+    _subject: `New Lead — ${showName}`,
+    "Trade Show":     showName,
+    "First Name":     first,
+    "Last Name":      last,
+    "Title":          document.getElementById("fTitle").value.trim()  || "—",
+    "District / Org": district,
+    "Email":          email,
+    "Phone":          document.getElementById("fPhone").value.trim()  || "—",
+    "Interest":       document.getElementById("fInterest").value      || "—",
+    "Notes":          document.getElementById("fNotes").value.trim()  || "—",
+    "Opt In":         document.getElementById("fOptIn").checked ? "Yes" : "No",
+    "Submitted At":   new Date().toLocaleString("en-US", {
+      month:"short", day:"numeric", year:"numeric",
+      hour:"numeric", minute:"2-digit", timeZoneName:"short"
+    }),
   };
-  try{
-    const existing=JSON.parse(localStorage.getItem(LEADS_KEY)||"[]");
-    existing.push(lead);
-    localStorage.setItem(LEADS_KEY,JSON.stringify(existing));
-  }catch(e){console.error(e);}
-  document.getElementById("formState").style.display="none";
-  document.getElementById("successState").style.display="block";
+ 
+  try {
+    const res = await fetch(FORMSPREE_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+ 
+    if (res.ok) {
+      document.getElementById("formState").style.display = "none";
+      document.getElementById("successState").style.display = "block";
+    } else {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.error || "Server error");
+    }
+  } catch(err) {
+    console.error("Formspree error:", err);
+    btn.disabled = false;
+    btn.textContent = "Submit & Connect →";
+    errBanner.style.display = "block";
+  }
 }
 </script>
 </body>
