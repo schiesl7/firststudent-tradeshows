@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>First Student — Trade Show PMS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1923;font-family:'Georgia','Times New Roman',serif;color:#e8dcc8;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:#0f1923;}
+::-webkit-scrollbar-thumb{background:#2d3f52;border-radius:3px;}
+input,select,textarea{font-family:inherit;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:#1a2d3d;border:1px solid #c9a84c;border-radius:10px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;}
+.show-card{transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;}
+.show-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.cal-cell{min-height:100px;border:1px solid #1a2d3d;border-radius:4px;padding:4px 3px;background:#111e2b;vertical-align:top;overflow:hidden;}
+.cal-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.1s;}
+.cal-event:hover{opacity:0.8;}
+.filter-pill{cursor:pointer;transition:all 0.15s;font-family:inherit;border:none;}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a2d3d;border:1px solid #c9a84c;border-radius:8px;padding:12px 18px;color:#e8dcc8;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:slideIn 0.3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.progress-bar{height:4px;background:#1a2d3d;border-radius:2px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;background:#c9a84c;border-radius:2px;transition:width 0.4s ease;}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+.receipt-zone{border:2px dashed #2d3f52;border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.receipt-zone:hover,.receipt-zone.drag-over{border-color:#c9a84c;background:rgba(201,168,76,0.04);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const STORAGE_KEY   = "fs_pms_v3";
+const SETTINGS_KEY  = "fs_pms_settings_v3";
+// leads now handled by Formspree
+const PASSWORD      = "FirstStudent2026";
+
+const DEPT_ALIAS = {
+  "Alt":"First Alt","First Alt":"First Alt",
+  "Services":"First Services","First Serves":"First Services","First Services":"First Services",
+  "DBD":"DBD","Charter":"Charter","Ops":"Ops","OPS":"Ops","AGM":"AGM","Location":"Location","Special Ed":"Special Ed",
+};
+function normalizeDept(raw){
+  if(!raw) return "";
+  return raw.split(",").map(d=>{const t=d.trim();return DEPT_ALIAS[t]||t;})
+    .filter((v,i,a)=>v&&a.indexOf(v)===i).join(", ");
+}
+
+const DEPT_COLORS={
+  "Charter":       {bg:"#fef3c7",border:"#f59e0b",text:"#92400e",cal:"#f59e0b"},
+  "First Alt":     {bg:"#dbeafe",border:"#3b82f6",text:"#1e3a8a",cal:"#3b82f6"},
+  "First Services":{bg:"#dcfce7",border:"#22c55e",text:"#14532d",cal:"#22c55e"},
+  "First Serves":  {bg:"#dcfce7",border:"#22c55e",text:"#14532d",cal:"#22c55e"},
+  "DBD":           {bg:"#f3e8ff",border:"#a855f7",text:"#581c87",cal:"#a855f7"},
+  "Ops":           {bg:"#fce7f3",border:"#ec4899",text:"#831843",cal:"#ec4899"},
+  "AGM":           {bg:"#fdf4ff",border:"#c084fc",text:"#6b21a8",cal:"#c084fc"},
+  "Location":      {bg:"#fff7ed",border:"#f97316",text:"#7c2d12",cal:"#f97316"},
+  "Special Ed":    {bg:"#f0fdf4",border:"#4ade80",text:"#166534",cal:"#4ade80"},
+  "default":       {bg:"#f1f5f9",border:"#94a3b8",text:"#334155",cal:"#94a3b8"},
+};
+const CANONICAL_DEPTS=["Charter","First Alt","First Services","DBD","Ops"];
+function getDeptColor(dept){
+  if(!dept) return DEPT_COLORS["default"];
+  const first=normalizeDept(dept).split(",")[0].trim();
+  return DEPT_COLORS[first]||DEPT_COLORS["default"];
+}
+function showMatchesDept(show,filterDept){
+  if(filterDept==="All") return true;
+  return normalizeDept(show.department).split(",").map(d=>d.trim()).includes(filterDept);
+}
+
+// ─── INITIAL DATA ─────────────────────────────────────────────────────────────
+const INITIAL_SHOWS=[
+  {id:1,name:"SESPTC & VAPT",start:"2025-07-07",end:"2025-07-11",city:"Richmond, VA",department:"Alt",attendees:"Blake Smith, Maurice Murphy",notes:"Jul 10, 2025"},
+  {id:2,name:"MOAPT",start:"2025-07-08",end:"2025-07-10",city:"St. Charles, MO",department:"Location",attendees:"John Jacob",notes:"Wednesday, July 9, 3-6:30pm"},
+  {id:3,name:"STN Expo",start:"2025-07-11",end:"2025-07-16",city:"Reno, NV",department:"DBD, Alt",attendees:"Bridget Geyer, Ameur Kallel, Kyle Tyree",notes:"Mon 7/14 5-9pm, Tue 7/15 10am-1:30pm"},
+  {id:4,name:"SCAPT",start:"2025-07-13",end:"2025-07-17",city:"Myrtle Beach, SC",department:"Alt",attendees:"Rob Golematis, Maurice Murphy",notes:"Trade Show 10am-1pm"},
+  {id:5,name:"OASBO",start:"2025-07-23",end:"2025-07-25",city:"Bend, OR",department:"DBD",attendees:"Meredith Christiansen, Dan Lee, Kaleb Kahssai",notes:"Wed 7/23 4:30-6pm, Thu 7/24 8am-4:15pm"},
+  {id:6,name:"Idaho Student Transportation",start:"2025-07-28",end:"2025-07-30",city:"Garden City, ID",department:"DBD, Alt",attendees:"Meredith Christiansen, Robert Inbody",notes:"Wednesday July 30, 9am-1pm"},
+  {id:7,name:"SLRC",start:"2025-07-28",end:"2025-07-30",city:"Lake Charles, LA",department:"DBD, Services",attendees:"Ryan Brock, Edmund Dixon",notes:"Mon 7/28 1:30-5pm, Tue 7/29 7am-5:30pm"},
+  {id:8,name:"CSC Live",start:"2025-10-01",end:"2025-10-03",city:"Stockton, CA",department:"Alt, DBD",attendees:"Robert Inbody, Patricia Tuttle, Bridget Geyer",notes:"Wed 10/1-Fri 10/3"},
+  {id:9,name:"MCPSA",start:"2025-10-09",end:"2025-10-10",city:"St. Louis, MO",department:"AGM, DBD, Alt",attendees:"Lucas Terando, Rhiannon Castillo, Wendy Hill, Ami Parikh",notes:""},
+  {id:10,name:"PASA-PSBA",start:"2025-10-19",end:"2025-10-21",city:"Pocono Manor, PA",department:"DBD",attendees:"Ryan Stanley, Steve Hessler, Jean Catania, Greg Gallagher",notes:"Size: 369"},
+  {id:11,name:"NYSSBA",start:"2025-10-23",end:"2025-10-25",city:"New York, NY",department:"DBD, First Services",attendees:"Ryan Stanley, Sonja Bauer",notes:"Fri Oct 24 10am-5pm, Sat Oct 25 8:30-11:30am. Size: 1429"},
+  {id:12,name:"NAPT ACTS",start:"2025-10-31",end:"2025-11-04",city:"Grand Rapids, MI",department:"Alt",attendees:"Gregg Prettyman, Leon Fornelli, Steve Mentzer",notes:"Size: 304"},
+  {id:13,name:"NAEHCY",start:"2025-11-01",end:"2025-11-04",city:"Dallas, TX",department:"First Alt",attendees:"Blake Smith, Rob Golematis",notes:"Size: 2500"},
+  {id:14,name:"CASE",start:"2025-11-05",end:"2025-11-07",city:"Oklahoma City, OK",department:"First Alt, First Services",attendees:"Will McDermott, Desmond Poulson, Robert Inbody, Mary Beth Lisy",notes:""},
+  {id:15,name:"OSBA - OR",start:"2025-11-06",end:"2025-11-09",city:"Portland, OR",department:"DBD, First Services",attendees:"Bridget Geyer, Kaleb Kahssai",notes:"Thu Nov 6 4-6pm, Fri Nov 7 8am-4pm"},
+  {id:16,name:"TSD",start:"2025-11-09",end:"2025-11-10",city:"Frisco, TX",department:"First Alt, First Services",attendees:"Edmund Dixon, Gregg Prettyman, Rob Golematis, Laura GH",notes:"Size: 420"},
+  {id:17,name:"CASS",start:"2025-11-05",end:"2025-11-07",city:"Alberta, CA",department:"DBD",attendees:"Jonathan Weal",notes:""},
+  {id:18,name:"NASDPTS",start:"2025-11-13",end:"2025-11-16",city:"Pentagon City, VA",department:"First Alt",attendees:"Blake Smith, Gregg Prettyman",notes:""},
+  {id:19,name:"WSSDA",start:"2025-11-20",end:"2025-11-22",city:"",department:"",attendees:"Kaleb Kahssai, Bridget Geyer",notes:""},
+  {id:20,name:"IASB/IASA/IASBO",start:"2025-11-21",end:"2025-11-23",city:"",department:"",attendees:"Peter, Leon, De'Andre, Chris Coyle",notes:"6 badges"},
+  {id:21,name:"ALSASBO",start:"2025-12-08",end:"2025-12-11",city:"",department:"",attendees:"Kevin Hansen, Bridget Geyer",notes:""},
+  {id:22,name:"ACA Texoma",start:"2026-01-20",end:"2026-01-22",city:"Hunt, TX",department:"Charter",attendees:"Brian Bendarek, Angela Hernandez, Rhiannon Castillo",notes:"Size: 120"},
+  {id:23,name:"WASB",start:"2026-01-21",end:"2026-01-23",city:"Milwaukee, WI",department:"",attendees:"Peter Rudnick, Edmund Dixon",notes:""},
+  {id:24,name:"ASBOA Jan",start:"2026-01-21",end:"2026-01-23",city:"Nisku, AB",department:"",attendees:"Francis Lalonde, Yacine Belhadj, Jonathan Weal",notes:""},
+  {id:25,name:"TASA Midwinter",start:"2026-01-25",end:"2026-01-28",city:"San Antonio, TX",department:"First Services",attendees:"Edmund Dixon, Rhiannon Castillo",notes:"Size: 5673"},
+  {id:26,name:"AASA",start:"2026-02-12",end:"2026-02-14",city:"Nashville, TN",department:"DBD, First Services",attendees:"Kevin King, Rhiannon Castillo, Mary Beth Lisy, Darrel Harris",notes:"Size: ~4000"},
+  {id:27,name:"ACA",start:"2026-02-17",end:"2026-02-20",city:"San Diego, CA",department:"Charter",attendees:"Angela Hernandez, Brian Bednarek, David Chan, Tim Colleran",notes:"Size: ~1800"},
+  {id:28,name:"CCSA",start:"2026-02-23",end:"2026-02-26",city:"Long Beach, CA",department:"DBD, Alt",attendees:"Bridget Geyer, Rob Inbody",notes:""},
+  {id:29,name:"TASBO",start:"2026-02-23",end:"2026-02-27",city:"Grapevine, TX",department:"DBD, First Services",attendees:"Rhiannon Castillo, Edmund Dixon",notes:""},
+  {id:30,name:"SC CEC",start:"2026-02-25",end:"2026-02-28",city:"Myrtle Beach, SC",department:"First Services",attendees:"Mary Beth Lisy",notes:"Size: 455"},
+  {id:31,name:"CASTO",start:"2026-02-28",end:"2026-03-02",city:"Burbank, CA",department:"First Alt, DBD",attendees:"Kaleb Kahssai, Jason Songer, Rob Inbody",notes:""},
+  {id:32,name:"GCAPT",start:"2026-02-28",end:"2026-03-01",city:"Katy, TX",department:"",attendees:"Rob Golematis, William Dodson",notes:"Size: 128"},
+  {id:33,name:"Edu-Tech",start:"2026-03-01",end:"2026-03-03",city:"Atlanta, GA",department:"Special Ed",attendees:"Gregg/Will",notes:"Awaiting acceptance"},
+  {id:34,name:"MSLBD",start:"2026-03-05",end:"2026-03-07",city:"Kansas City, MO",department:"First Services",attendees:"Edmund Dixon - not attending",notes:"No one attending this year"},
+  {id:35,name:"ACA Tri State",start:"2026-03-10",end:"2026-03-12",city:"Atlantic City, NJ",department:"Charter",attendees:"Lee Ripani, Tim Colleran, Brandon Dudley",notes:"Size: ~3000. Trade show 3/10-3/11"},
+  {id:36,name:"CEC",start:"2026-03-11",end:"2026-03-14",city:"Salt Lake City, UT",department:"First Alt",attendees:"Robert Inbody, Desmond Poulson",notes:"Trade show 3/11-3/13"},
+  {id:37,name:"COSSBA",start:"2026-03-13",end:"2026-03-15",city:"Louisville, KY",department:"First Services",attendees:"Edmund Dixon, Mary Beth Lisy",notes:"Size: 1450. Trade show 3/13-3/14"},
+  {id:38,name:"AEPA - GRREC",start:"2026-03-17",end:"2026-03-18",city:"",department:"First Alt",attendees:"Blake Smith",notes:""},
+  {id:39,name:"LASTO",start:"2026-03-18",end:"2026-03-20",city:"Marksville, LA",department:"First Services",attendees:"James Stokes, Danny Deardan, Mary Beth Lisy, Rob Golematis",notes:""},
+  {id:40,name:"UAPT",start:"2026-03-23",end:"2026-03-25",city:"St. George, UT",department:"DBD",attendees:"Bridget Geyer, Kaleb Kahssai, Travis Lesneski",notes:"March 23, 11am-1:30pm"},
+  {id:41,name:"PASBO",start:"2026-03-24",end:"2026-03-27",city:"Pittsburgh, PA",department:"DBD, First Services",attendees:"Ryan Stanley, Matt Bonislawski, CJ Marcolini, Shawn Albright, Steve Hessler",notes:"Trade show 3/25-3/26"},
+  {id:42,name:"ACA New England",start:"2026-03-27",end:"2026-03-29",city:"Manchester, NH",department:"Charter",attendees:"Lee Ripani, Brandon Dudley",notes:"Size: ~800. Trade show 3/27-3/28"},
+  {id:43,name:"STN - Charlotte",start:"2026-03-26",end:"2026-03-31",city:"Charlotte/Concord, NC",department:"First Alt",attendees:"Blake Smith, Edmund Dixon, Jason Kierna",notes:"Trade show 3/30"},
+  {id:44,name:"LSBA",start:"2026-03-29",end:"2026-03-31",city:"Crowne Plaza - Baton Rouge",department:"First Services",attendees:"Mary Beth Lisy, Rob Golematis",notes:""},
+  {id:45,name:"CASBO",start:"2026-03-31",end:"2026-04-01",city:"San Diego, CA",department:"Ops, DBD",attendees:"Edmund Dixon, George Lee, Desmond Poulson, Bridget Geyer, Lisa Serra, Andrew Good, Erin Borda, Kim Worster",notes:""},
+  {id:46,name:"NSBA",start:"2026-04-10",end:"2026-04-12",city:"San Antonio, TX",department:"First Services",attendees:"Bobbie Hartman",notes:"Fri Apr 10 4-6pm, Sat Apr 11 11:30am-2:30pm"},
+  {id:47,name:"MSBO",start:"2026-04-21",end:"2026-04-23",city:"Grand Rapids, MI",department:"DBD",attendees:"Edmund Dixon, Peter Rudnik",notes:"Wed Apr 22 2:15-5pm, Thu Apr 23 11am-1pm"},
+  {id:48,name:"CGCS",start:"2026-04-21",end:"2026-04-24",city:"Detroit, MI",department:"First Alt",attendees:"Sonja Bauer, Rhiannon Castillo, Gregg Prettyman",notes:""},
+  {id:49,name:"SASBO",start:"2026-04-22",end:"2026-04-24",city:"Regina, SK",department:"",attendees:"Matt Wiebe, Jonathan Weal, Justin Johanson, Ginger Graham",notes:"Trade show 4/22-4/23"},
+  {id:50,name:"CT ASBO",start:"2026-04-23",end:"2026-04-23",city:"Plantsville, CT",department:"DBD",attendees:"Ryan Stanley, Jackson Diodoardo",notes:""},
+  {id:51,name:"Oregon PTA",start:"2026-04-24",end:"2026-04-25",city:"Clackamas, OR",department:"First Alt",attendees:"Desmond Poulson, Ken Ortega",notes:""},
+  {id:52,name:"MASBO",start:"2026-05-01",end:"2026-05-31",city:"Winnipeg, MB",department:"",attendees:"Matt Wiebe, Jonathan Weal, Danielle DesAutels",notes:"May 2026"},
+  {id:53,name:"WASBO",start:"2026-05-13",end:"2026-05-15",city:"Tacoma, WA",department:"DBD, First Services",attendees:"Bridget Geyer, Kaleb Kahssai",notes:""},
+  {id:54,name:"Tri-State ASBO",start:"2026-05-20",end:"2026-05-22",city:"Burlington, VT",department:"DBD",attendees:"Ryan Stanley, Jackson Diodoardo",notes:""},
+  {id:55,name:"TAPT (Tennessee)",start:"2026-06-01",end:"2026-06-03",city:"Pigeon Forge, TN",department:"First Services",attendees:"Mary Beth Lisy, Tom Fowee",notes:""},
+  {id:56,name:"CSPTA",start:"2026-06-08",end:"2026-06-10",city:"Denver, CO",department:"DBD, First Services, First Alt",attendees:"Bridget Geyer, Kaleb Kahssai, Desmond Poulson",notes:""},
+  {id:57,name:"FAPT",start:"2026-06-14",end:"2026-06-18",city:"Orlando, FL",department:"First Alt, First Services",attendees:"Mary Beth Lisy, Rob Golematis, Hugo Donis",notes:""},
+  {id:58,name:"GAPT",start:"2026-06-15",end:"2026-06-17",city:"Jekyll Island, GA",department:"",attendees:"Hugo Donis, Emily Giles, Jason Reaves, Kelly Eaker",notes:""},
+  {id:59,name:"ASBOA Jun",start:"2026-06-15",end:"2026-06-17",city:"Calgary, AB",department:"",attendees:"Jonathan Weal, Faisel Malik, Rick Ahee, Mike Sakic",notes:""},
+  {id:60,name:"NCPTA",start:"2026-06-15",end:"2026-06-18",city:"Asheville, NC",department:"First Alt",attendees:"Mary Beth Lisy, Blake Smith",notes:""},
+  {id:61,name:"TAA",start:"2026-06-16",end:"2026-06-19",city:"Flagstaff, AZ",department:"First Alt",attendees:"Bridget Geyer, Travis Lesneski, Josh Kennington",notes:"Trade show 6/17"},
+  {id:62,name:"TAPT (Texas)",start:"2026-06-26",end:"2026-06-30",city:"The Woodlands, TX",department:"First Alt",attendees:"Rhiannon Castillo, Rob Golematis, William Dodson",notes:""},
+  {id:63,name:"MSAPT",start:"2026-06-24",end:"2026-06-26",city:"Tupelo, MS",department:"",attendees:"Rhiannon Castillo, Emily Giles, Stephanie",notes:""},
+  {id:64,name:"WAPT",start:"2026-06-28",end:"2026-07-01",city:"Kennewick, WA",department:"First Alt",attendees:"Bridget Geyer, Branden Seeberger",notes:""},
+  {id:65,name:"MIAPT",start:"2026-06-30",end:"2026-06-30",city:"Boyne Mountain, MI",department:"",attendees:"",notes:""},
+];
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+function getStored(){
+  try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}
+}
+function saveStored(shows){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(shows));}catch(e){}
+}
+function getSettings(){
+  try{const s=localStorage.getItem(SETTINGS_KEY);return s?JSON.parse(s):{};}catch(e){return{};}
+}
+function saveSettings(s){
+  try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}catch(e){}
+}
+function getLeads(){return[];}
+function saveLeads(){}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function fmtRange(start,end){
+  const s=new Date(start+"T12:00:00"),e=new Date(end+"T12:00:00");
+  const o={month:"short",day:"numeric"};
+  if(start===end) return s.toLocaleDateString("en-US",o);
+  if(s.getMonth()===e.getMonth()&&s.getFullYear()===e.getFullYear())
+    return `${s.toLocaleDateString("en-US",o)} – ${e.getDate()}`;
+  return `${s.toLocaleDateString("en-US",o)} – ${e.toLocaleDateString("en-US",o)}`;
+}
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const dt=new Date(dateStr+"T00:00:00");
+  return Math.round((dt-today)/86400000);
+}
+function uid(){return "id_"+Date.now()+"_"+Math.random().toString(36).slice(2,6);}
+function fmtDate(d){
+  if(!d) return "—";
+  return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+}
+function completionPct(show){
+  const checks=[show.city,show.start,show.venue,show.booth?.number&&show.booth.number!=="TBD",
+    show.hotel?.confirmNumber,show.attendees,show.swag];
+  return Math.round(checks.filter(Boolean).length/checks.length*100);
+}
+function budgetTotal(show){
+  const b=show.budget||{};
+  return (b.booth||0)+(b.travel||0)+(b.hotel||0)+(b.swag||0)+(b.other||0);
+}
+
+// ─── ICS GENERATOR ───────────────────────────────────────────────────────────
+function generateICS(show){
+  const pad=n=>String(n).padStart(2,"0");
+  function toICSDate(ds){const d=new Date(ds+"T12:00:00");return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;}
+  const endD=new Date(show.end+"T12:00:00");endD.setDate(endD.getDate()+1);
+  const endStr=`${endD.getFullYear()}${pad(endD.getMonth()+1)}${pad(endD.getDate())}`;
+  const desc=[
+    show.city?`Location: ${show.city}`:"",
+    show.venue?`Venue: ${show.venue}`:"",
+    show.website?`Website: ${show.website}`:"",
+    show.booth?.number?`Booth: ${show.booth.number}`:"",
+    show.hotel?.name?`Hotel: ${show.hotel.name}${show.hotel.confirmNumber?" ("+show.hotel.confirmNumber+")":""}`:"",
+    show.attendees?`Attendees: ${show.attendees}`:"",
+    show.hasSponsor&&show.sponsorNotes?`Sponsorship: ${show.sponsorNotes}`:"",
+    show.hasSpeaking&&show.speakingTitle?`Speaking: "${show.speakingTitle}" — ${show.speakingWho||""} (${show.speakingWhen||""})`:"",
+    show.notes?`Notes: ${show.notes}`:"",
+  ].filter(Boolean).join("\\n");
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//First Student Trade Show PMS//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH",
+    "BEGIN:VEVENT",`UID:tradeshow-${show.id}-${Date.now()}@firststudent`,
+    `DTSTART;VALUE=DATE:${toICSDate(show.start)}`,`DTEND;VALUE=DATE:${endStr}`,
+    `SUMMARY:${show.name}${show.city?" – "+show.city:""}`,`DESCRIPTION:${desc}`,
+    show.website?`URL:${show.website}`:"",show.city?`LOCATION:${show.city}`:"",
+    "END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
+  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=`${show.name.replace(/[^a-z0-9]/gi,"-")}.ics`;a.click();URL.revokeObjectURL(url);
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3200);return()=>clearTimeout(t);},[]);
+  const icons={success:"✅",error:"❌",warning:"⚠️",info:"ℹ️"};
+  return <div className="toast">{icons[type]||"ℹ️"} {msg} <span onClick={onDone} style={{marginLeft:8,cursor:"pointer",color:"#8a9bb0"}}>×</span></div>;
+}
+
+// ─── DEPT BADGES ─────────────────────────────────────────────────────────────
+function DeptBadges({department,size="sm"}){
+  if(!department) return <span style={{fontSize:11,color:"#4a5a6a",fontStyle:"italic"}}>No dept</span>;
+  const norm=normalizeDept(department);
+  return <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{norm.split(",").map(d=>{
+    const t=d.trim(),c=DEPT_COLORS[t]||DEPT_COLORS.default;
+    return <span key={t} style={{fontSize:size==="xs"?9:10,fontWeight:700,padding:size==="xs"?"2px 6px":"2px 8px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`,textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>{t}</span>;
+  })}</div>;
+}
+
+// ─── DEPT FILTER ─────────────────────────────────────────────────────────────
+function DeptFilter({value,onChange,extra}){
+  const base={padding:"5px 13px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",background:"transparent",color:"#8a9bb0",border:"1.5px solid #2d3f52",fontWeight:400};
+  const on={...base,background:"#c9a84c",color:"#0f1923",border:"1.5px solid #c9a84c",fontWeight:700};
+  return <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+    <span style={{fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1}}>Dept</span>
+    {["All",...CANONICAL_DEPTS].map(d=><button key={d} className="filter-pill" onClick={()=>onChange(d)} style={value===d?on:base}>{d}</button>)}
+    {extra}
+  </div>;
+}
+
+// ─── ALERTS ENGINE ────────────────────────────────────────────────────────────
+function generateAlerts(shows){
+  const alerts=[];
+  shows.forEach(show=>{
+    if(show.status==="complete") return;
+    const days=daysUntil(show.start);
+    if(days!==null&&days>=0&&days<=7) alerts.push({type:"urgent",text:`${show.name} is ${days===0?"TODAY":`in ${days} day${days!==1?"s":""}`}`,showId:show.id});
+    (show.reminders||[]).forEach(r=>{
+      if(r.done) return;
+      const rd=daysUntil(r.date);
+      if(rd!==null&&rd<0) alerts.push({type:"urgent",text:`[${show.name}] OVERDUE: ${r.text}`,showId:show.id});
+      else if(rd!==null&&rd<=3) alerts.push({type:"warning",text:`[${show.name}] Due soon: ${r.text} (${fmtDate(r.date)})`,showId:show.id});
+    });
+    if(!show.hotel?.confirmNumber&&days!==null&&days<=30&&days>=0)
+      alerts.push({type:"info",text:`[${show.name}] Hotel not confirmed`,showId:show.id});
+  });
+  return alerts;
+}
+
+
+
+// ─── SHOW CARD (cards view) ───────────────────────────────────────────────────
+function ShowCard({show,onEdit}){
+  const c=getDeptColor(show.department);
+  const pct=completionPct(show);
+  const total=budgetTotal(show);
+  const days=daysUntil(show.start);
+  const openRem=(show.reminders||[]).filter(r=>!r.done).length;
+  return <div className="show-card" onClick={()=>onEdit(show)} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderLeft:`4px solid ${c.border}`,borderRadius:8,padding:"14px 16px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
+      <h3 style={{fontSize:15,fontWeight:700,color:"#e8dcc8",lineHeight:1.3,margin:0}}>{show.name}</h3>
+      <div style={{display:"flex",gap:4,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        {show.hasSponsor&&<span title="Sponsorship" style={{fontSize:11,background:"#fef3c722",border:"1px solid #f59e0b",color:"#f59e0b",borderRadius:4,padding:"1px 5px"}}>🏆</span>}
+        {show.hasSpeaking&&<span title="Speaking" style={{fontSize:11,background:"#dbeafe22",border:"1px solid #3b82f6",color:"#3b82f6",borderRadius:4,padding:"1px 5px"}}>🎤</span>}
+        {show.booth?.number&&show.booth.number!=="TBD"&&<span title={`Booth ${show.booth.number}`} style={{fontSize:10,background:"#f3e8ff22",border:"1px solid #a855f7",color:"#a855f7",borderRadius:4,padding:"1px 5px"}}>#{show.booth.number}</span>}
+        {openRem>0&&<span title={`${openRem} open reminders`} style={{fontSize:10,background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:4,padding:"1px 5px"}}>⏰{openRem}</span>}
+      </div>
+    </div>
+    <div style={{fontSize:12,color:"#c9a84c",fontWeight:600,marginBottom:3,fontStyle:"italic"}}>{fmtRange(show.start,show.end)}</div>
+    {show.city&&<div style={{fontSize:12,color:"#8a9bb0",marginBottom:2}}>📍 {show.city}</div>}
+    {show.venue&&<div style={{fontSize:11,color:"#4a6a7a",marginBottom:4}}>🏛 {show.venue}</div>}
+    {show.website&&<div style={{fontSize:11,color:"#3b82f6",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>🔗 {show.website.replace(/^https?:\/\//,"")}</div>}
+    <div style={{marginTop:6,marginBottom:8}}><DeptBadges department={show.department}/></div>
+    {days!==null&&days>=0&&days<=14&&<div style={{fontSize:11,marginBottom:6,padding:"3px 8px",borderRadius:4,display:"inline-block",background:days<=3?"rgba(239,68,68,0.15)":"rgba(201,168,76,0.12)",color:days<=3?"#ef4444":"#c9a84c",border:`1px solid ${days<=3?"#ef4444":"#c9a84c"}`,fontWeight:700}}>{days===0?"TODAY":days===1?"TOMORROW":`${days} days away`}</div>}
+    {pct<100&&<div><div className="progress-bar"><div className="progress-fill" style={{width:pct+"%"}}/></div><div style={{fontSize:10,color:"#4a6a7a",marginTop:3,textAlign:"right"}}>{pct}% prep complete</div></div>}
+    {total>0&&<div style={{fontSize:11,color:"#8a9bb0",marginTop:6}}>💰 Budget: <span style={{color:"#c9a84c",fontWeight:700}}>${total.toLocaleString()}</span></div>}
+    {show.hasSpeaking&&show.speakingTitle&&<div style={{marginTop:6,fontSize:11,color:"#8a9bb0",borderTop:"1px solid #1e3040",paddingTop:5}}>🎤 <em>"{show.speakingTitle}"</em>{show.speakingWho&&` · ${show.speakingWho}`}</div>}
+  </div>;
+}
+
+// ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
+function CalendarView({shows,onEdit}){
+  const today=new Date();
+  const [year,setYear]=useState(today.getFullYear());
+  const [month,setMonth]=useState(today.getMonth());
+  const [dFilter,setDFilter]=useState("All");
+  const prev=()=>{if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1);};
+  const next=()=>{if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1);};
+  const goToday=()=>{setYear(today.getFullYear());setMonth(today.getMonth());};
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const filtShows=shows.filter(s=>showMatchesDept(s,dFilter));
+  function showsOnDay(day){
+    const ds=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    return filtShows.filter(s=>s.start<=ds&&s.end>=ds);
+  }
+  const monthName=new Date(year,month,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const btn={background:"#1a2d3d",border:"1px solid #2d3f52",color:"#c9a84c",width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:18,lineHeight:"1"};
+  return <div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={prev} style={btn}>‹</button>
+        <h2 style={{fontSize:20,fontWeight:700,color:"#c9a84c",letterSpacing:2,minWidth:220,textAlign:"center"}}>{monthName.toUpperCase()}</h2>
+        <button onClick={next} style={btn}>›</button>
+        <button onClick={goToday} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",marginLeft:4}}>Today</button>
+      </div>
+    </div>
+    <div style={{marginBottom:16}}><DeptFilter value={dFilter} onChange={setDFilter}/></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>
+      {DAYS.map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,padding:"4px 0"}}>{d}</div>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+      {Array(firstDay).fill(null).map((_,i)=><div key={"x"+i} style={{minHeight:100,background:"#0a131c",borderRadius:4,border:"1px solid #111e2b"}}/>)}
+      {Array(daysInMonth).fill(null).map((_,i)=>{
+        const day=i+1;
+        const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
+        const dayShows=showsOnDay(day);
+        const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        return <div key={day} className="cal-cell" style={{background:isToday?"#1c2f40":"#111e2b",border:isToday?"1.5px solid #c9a84c":"1px solid #1a2d3d"}}>
+          <div style={{fontSize:11,color:isToday?"#c9a84c":"#3a4f62",fontWeight:isToday?700:400,textAlign:"right",marginBottom:3}}>{day}</div>
+          {dayShows.slice(0,4).map(s=>{
+            const c=getDeptColor(s.department);
+            const isStart=s.start===dateStr;
+            const openRem=(s.reminders||[]).filter(r=>!r.done&&daysUntil(r.date)<=0).length;
+            return <div key={s.id} className="cal-event" onClick={e=>{e.stopPropagation();onEdit(s);}}
+              title={`${s.name} · ${fmtRange(s.start,s.end)}${s.city?" · "+s.city:""}`}
+              style={{background:c.cal+"28",borderLeft:`2px solid ${c.cal}`,color:c.cal,fontWeight:isStart?700:400,opacity:isStart?1:0.55,position:"relative"}}>
+              {isStart?<>{openRem>0&&<span style={{fontSize:8,background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"0 3px",marginRight:2}}>!</span>}{s.name}</>:"·"}
+            </div>;
+          })}
+          {dayShows.length>4&&<div style={{fontSize:9,color:"#8a9bb0",paddingLeft:3}}>+{dayShows.length-4} more</div>}
+        </div>;
+      })}
+    </div>
+    <div style={{marginTop:16,display:"flex",flexWrap:"wrap",gap:6}}>
+      {CANONICAL_DEPTS.map(k=>{const c=DEPT_COLORS[k]||DEPT_COLORS.default;return <span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`}}>{k}</span>;})}
+    </div>
+  </div>;
+}
+
+// ─── CARDS VIEW ───────────────────────────────────────────────────────────────
+function CardView({shows,onEdit}){
+  const [dFilter,setDFilter]=useState("All");
+  const [search,setSearch]=useState("");
+  const filtered=shows.filter(s=>{
+    if(!showMatchesDept(s,dFilter)) return false;
+    if(!search) return true;
+    const q=search.toLowerCase();
+    return [s.name,s.city,s.attendees,s.notes,s.website,s.booth?.number,s.venue,s.hotel?.name].some(v=>v&&String(v).toLowerCase().includes(q));
+  });
+  const byMonth={};
+  filtered.forEach(s=>{
+    const m=new Date(s.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"});
+    if(!byMonth[m])byMonth[m]=[];
+    byMonth[m].push(s);
+  });
+  return <div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20,alignItems:"center"}}>
+      <DeptFilter value={dFilter} onChange={setDFilter}/>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search shows, venues, attendees…"
+        style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:6,padding:"7px 14px",color:"#e8dcc8",fontSize:13,outline:"none",fontFamily:"inherit",width:280}}/>
+      {search&&<button onClick={()=>setSearch("")} style={{background:"transparent",border:"none",color:"#8a9bb0",cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>✕ Clear</button>}
+    </div>
+    {Object.entries(byMonth).map(([month,items])=>(
+      <div key={month} style={{marginBottom:40}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <h2 style={{fontSize:19,fontWeight:700,color:"#c9a84c",textTransform:"uppercase",letterSpacing:3,whiteSpace:"nowrap"}}>{month}</h2>
+          <div style={{flex:1,height:1,background:"linear-gradient(to right,#c9a84c44,transparent)"}}/>
+          <span style={{fontSize:12,color:"#8a9bb0"}}>{items.length} show{items.length!==1?"s":""}</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:12}}>
+          {items.map(s=><ShowCard key={s.id} show={s} onEdit={onEdit}/>)}
+        </div>
+      </div>
+    ))}
+    {Object.keys(byMonth).length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No shows match this filter.</div>}
+  </div>;
+}
+
+// ─── ATTENDEES VIEW ───────────────────────────────────────────────────────────
+function AttendeesView({shows,onEdit}){
+  const [search,setSearch]=useState("");
+  const [dFilter,setDFilter]=useState("All");
+  const filtShows=shows.filter(s=>showMatchesDept(s,dFilter));
+  const personMap={};
+  filtShows.forEach(show=>{
+    if(!show.attendees) return;
+    show.attendees.split(",").forEach(raw=>{
+      const name=raw.trim();if(!name)return;
+      if(!personMap[name])personMap[name]=[];
+      personMap[name].push(show);
+    });
+  });
+  const sorted=Object.entries(personMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const filtered=search?sorted.filter(([n])=>n.toLowerCase().includes(search.toLowerCase())):sorted;
+  return <div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20,alignItems:"center"}}>
+      <DeptFilter value={dFilter} onChange={setDFilter}/>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name…"
+        style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:6,padding:"7px 14px",color:"#e8dcc8",fontSize:13,outline:"none",fontFamily:"inherit",width:200}}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12}}>
+      {filtered.map(([name,personShows])=>(
+        <div key={name} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:8,padding:"14px 16px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+            <h3 style={{fontSize:14,fontWeight:700,color:"#c9a84c"}}>{name}</h3>
+            <span style={{fontSize:11,color:"#8a9bb0",background:"#0f1923",padding:"2px 8px",borderRadius:20,border:"1px solid #2d3f52",whiteSpace:"nowrap"}}>{personShows.length} show{personShows.length!==1?"s":""}</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {personShows.sort((a,b)=>a.start.localeCompare(b.start)).map(s=>(
+              <div key={s.id} onClick={()=>onEdit(s)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 9px",background:"#0f1923",borderRadius:6,cursor:"pointer",border:"1px solid #1e3040"}}>
+                <div style={{minWidth:0,flex:1}}>
+                  <div style={{fontSize:12,color:"#e8dcc8",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
+                  <div style={{fontSize:11,color:"#8a9bb0"}}>{fmtRange(s.start,s.end)}{s.city?` · ${s.city}`:""}</div>
+                </div>
+                <div style={{marginLeft:8,flexShrink:0}}><DeptBadges department={s.department} size="xs"/></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+    {filtered.length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No attendees found.</div>}
+  </div>;
+}
+
+// ─── ALERTS VIEW ──────────────────────────────────────────────────────────────
+function AlertsView({shows,onEdit}){
+  const alerts=generateAlerts(shows);
+  if(!alerts.length) return <div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>
+    <div style={{fontSize:40,marginBottom:12}}>✅</div>
+    <div style={{fontSize:18,color:"#c9a84c",fontWeight:700,marginBottom:6}}>All clear</div>
+    <div style={{fontSize:13}}>No urgent alerts or overdue reminders</div>
+  </div>;
+  const typeColor={urgent:"#ef4444",warning:"#f59e0b",info:"#3b82f6"};
+  return <div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {alerts.map((a,i)=>{
+      const show=shows.find(s=>s.id===a.showId);
+      return <div key={i} onClick={()=>show&&onEdit(show)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#1a2d3d",border:`1px solid ${typeColor[a.type]}33`,borderLeft:`3px solid ${typeColor[a.type]}`,borderRadius:8,cursor:show?"pointer":"default"}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:typeColor[a.type],flexShrink:0}}/>
+        <div style={{flex:1,fontSize:13}}>{a.text}</div>
+        {show&&<div style={{fontSize:11,color:"#8a9bb0",flexShrink:0}}>→ Open</div>}
+      </div>;
+    })}
+  </div>;
+}
+
+// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+function EditModal({show,onSave,onClose,onDelete,toast}){
+  const blank={name:"",start:"",end:"",city:"",venue:"",department:"",attendees:"",notes:"",
+    website:"",boothNumber:"",hasSponsor:false,sponsorNotes:"",hasSpeaking:false,speakingTitle:"",speakingWho:"",speakingWhen:"",
+    status:"upcoming",
+    booth:{size:"",number:"TBD",setup:"",teardown:"",shipper:"Abstract",trackingNumber:"",notes:""},
+    hotel:{name:"",address:"",confirmNumber:"",checkIn:"",checkOut:"",notes:""},
+    sponsorship:{level:"Exhibitor",amount:"",includes:"",notes:""},
+    swag:"",extras:"",budget:{booth:0,travel:0,hotel:0,swag:0,other:0},
+    reminders:[],receipts:[],changeLog:[],businessLine:[],leadFormUrl:""
+  };
+  const [form,setForm]=useState(show?{...blank,...show,
+    booth:{...blank.booth,...(show.booth||{})},
+    hotel:{...blank.hotel,...(show.hotel||{})},
+    sponsorship:{...blank.sponsorship,...(show.sponsorship||{})},
+    budget:{...blank.budget,...(show.budget||{})},
+    reminders:show.reminders||[],receipts:show.receipts||[],changeLog:show.changeLog||[],
+    businessLine:show.businessLine||[],
+  }:blank);
+  const [section,setSection]=useState("basic");
+  const isNew=!show;
+  const fileRef=useRef();
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const setNested=(obj,k,v)=>setForm(f=>({...f,[obj]:{...f[obj],[k]:v}}));
+
+  const lbl={fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"block"};
+  const inp={width:"100%",background:"#0f1923",border:"1px solid #2d3f52",borderRadius:6,padding:"8px 12px",color:"#e8dcc8",fontSize:14,outline:"none"};
+  const DEPT_OPTIONS=["Charter","First Alt","First Services","First Serves","DBD","Ops"];
+  const BL_OPTIONS=["Home-to-School","First Services","First Alt","First Student Charter","DBD","Ops"];
+
+  // Reminders
+  const [newRem,setNewRem]=useState({text:"",date:""});
+  const addReminder=()=>{
+    if(!newRem.text||!newRem.date){toast("Enter reminder text and date","error");return;}
+    set("reminders",[...form.reminders,{id:uid(),text:newRem.text,date:newRem.date,done:false}]);
+    setNewRem({text:"",date:""});
+  };
+  const toggleRem=(idx)=>{
+    const r=[...form.reminders];r[idx]={...r[idx],done:!r[idx].done};set("reminders",r);
+  };
+  const deleteRem=(idx)=>set("reminders",form.reminders.filter((_,i)=>i!==idx));
+
+  // Receipts
+  const handleReceiptFile=(files)=>{
+    Array.from(files).forEach(file=>{
+      if(file.size>5*1024*1024){toast("File too large (max 5MB)","error");return;}
+      const reader=new FileReader();
+      reader.onload=e=>set("receipts",[...form.receipts,{id:uid(),name:file.name,type:file.type,size:(file.size/1024).toFixed(1)+" KB",data:e.target.result,addedAt:Date.now()}]);
+      reader.readAsDataURL(file);
+    });
+  };
+  const downloadReceipt=(r)=>{const a=document.createElement("a");a.href=r.data;a.download=r.name;a.click();};
+  const deleteReceipt=(id)=>set("receipts",form.receipts.filter(r=>r.id!==id));
+
+  // Leads handled by Formspree
+
+  const SECTIONS=[
+    {id:"basic",label:"📋 Basic"},
+    {id:"booth",label:"🏗 Booth"},
+    {id:"hotel",label:"🏨 Hotel"},
+    {id:"sponsor",label:"⭐ Sponsor"},
+    {id:"speaking",label:"🎤 Speaking"},
+    {id:"budget",label:"💰 Budget"},
+    {id:"reminders",label:"⏰ Reminders"},
+    {id:"receipts",label:"🧾 Receipts"},
+    {id:"changelog",label:"🕐 Log"},
+  ];
+
+  const sTab=(id,label,hasDot)=>{
+    const active=section===id;
+    return <button key={id} onClick={()=>setSection(id)} style={{padding:"6px 11px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:"inherit",
+      background:active?"#c9a84c22":"transparent",color:active?"#c9a84c":"#8a9bb0",
+      border:`1px solid ${active?"#c9a84c":"#2d3f52"}`,fontWeight:active?700:400,whiteSpace:"nowrap",
+      display:"flex",alignItems:"center",gap:4}}>
+      {label}{hasDot&&!active&&<span style={{width:5,height:5,borderRadius:"50%",background:"#22c55e",display:"inline-block",flexShrink:0}}/>}
+    </button>;
+  };
+
+  return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal" style={{maxWidth:720}}>
+      {/* Header */}
+      <div style={{padding:"16px 22px",borderBottom:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <h2 style={{color:"#c9a84c",fontSize:17}}>{isNew?"Add New Show":"Edit — "+form.name}</h2>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#8a9bb0",fontSize:24,cursor:"pointer",lineHeight:1}}>×</button>
+      </div>
+
+      {/* Section tabs */}
+      <div style={{padding:"10px 16px",borderBottom:"1px solid #1a2d3d",display:"flex",gap:5,flexWrap:"wrap",background:"#0f1923"}}>
+        {SECTIONS.map(s=>sTab(s.id,s.label,
+          s.id==="booth"?!!(form.booth?.number&&form.booth.number!=="TBD"):
+          s.id==="hotel"?!!form.hotel?.confirmNumber:
+          s.id==="sponsor"?!!form.hasSponsor:
+          s.id==="speaking"?!!form.hasSpeaking:
+          s.id==="reminders"?form.reminders.some(r=>!r.done):
+          s.id==="receipts"?form.receipts.length>0:false
+        ))}
+      </div>
+
+      <div style={{padding:"18px 22px",minHeight:320}}>
+
+        {/* ── BASIC ── */}
+        {section==="basic"&&<div style={{display:"grid",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Show Name *</label>
+              <input value={form.name||""} onChange={e=>set("name",e.target.value)} style={inp}/>
+            </div>
+            <div><label style={lbl}>Start Date</label><input type="date" value={form.start||""} onChange={e=>set("start",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>End Date</label><input type="date" value={form.end||""} onChange={e=>set("end",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>City</label><input value={form.city||""} onChange={e=>set("city",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>Venue</label><input value={form.venue||""} onChange={e=>set("venue",e.target.value)} placeholder="Convention center, hotel, etc." style={inp}/></div>
+            <div><label style={lbl}>Website</label><input value={form.website||""} onChange={e=>set("website",e.target.value)} placeholder="https://…" style={inp}/>
+              {form.website&&<a href={form.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#3b82f6",marginTop:4,display:"inline-block"}}>↗ Open</a>}
+            </div>
+            <div><label style={lbl}>Status</label>
+              <select value={form.status||"upcoming"} onChange={e=>set("status",e.target.value)} style={{...inp,cursor:"pointer"}}>
+                <option value="upcoming">Upcoming</option><option value="active">Active / Live</option><option value="complete">Complete</option>
+              </select>
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Department(s)</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:4}}>
+                {DEPT_OPTIONS.map(d=>{
+                  const active=normalizeDept(form.department||"").split(",").map(x=>x.trim()).includes(d);
+                  const c=DEPT_COLORS[d]||DEPT_COLORS.default;
+                  return <button key={d} onClick={()=>{
+                    const cur=normalizeDept(form.department||"").split(",").map(x=>x.trim()).filter(x=>x);
+                    const next=active?cur.filter(x=>x!==d):[...cur,d];
+                    set("department",next.join(", "));
+                  }} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,
+                    background:active?c.bg:"transparent",color:active?c.text:"#8a9bb0",border:`1.5px solid ${active?c.border:"#2d3f52"}`}}>{d}</button>;
+                })}
+              </div>
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Business Line(s)</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {BL_OPTIONS.map(b=>{
+                  const active=(form.businessLine||[]).includes(b);
+                  return <button key={b} onClick={()=>{
+                    const cur=form.businessLine||[];
+                    set("businessLine",active?cur.filter(x=>x!==b):[...cur,b]);
+                  }} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",
+                    background:active?"rgba(201,168,76,0.2)":"transparent",color:active?"#c9a84c":"#8a9bb0",
+                    border:`1.5px solid ${active?"#c9a84c":"#2d3f52"}`,fontWeight:active?700:400}}>{b}</button>;
+                })}
+              </div>
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Attendees <span style={{textTransform:"none",letterSpacing:0}}>(comma-separated)</span></label>
+              <textarea rows={2} value={form.attendees||""} onChange={e=>set("attendees",e.target.value)} style={{...inp,resize:"vertical"}}/>
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Extras / Special Events</label>
+              <input value={form.extras||""} onChange={e=>set("extras",e.target.value)} placeholder="Pre-show dinner, speaking slot, demo, networking event…" style={inp}/>
+            </div>
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={lbl}>Notes / Internal Comments</label>
+              <textarea rows={3} value={form.notes||""} onChange={e=>set("notes",e.target.value)} style={{...inp,resize:"vertical"}}/>
+            </div>
+          </div>
+        </div>}
+
+        {/* ── BOOTH ── */}
+        {section==="booth"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <div><label style={lbl}>Booth Size</label><input value={form.booth?.size||""} onChange={e=>setNested("booth","size",e.target.value)} placeholder="10x10, 10x20…" style={inp}/></div>
+          <div><label style={lbl}>Booth Number</label><input value={form.booth?.number||""} onChange={e=>setNested("booth","number",e.target.value)} placeholder="TBD" style={inp}/></div>
+          <div><label style={lbl}>Setup Date</label><input type="date" value={form.booth?.setup||""} onChange={e=>setNested("booth","setup",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Teardown Date</label><input type="date" value={form.booth?.teardown||""} onChange={e=>setNested("booth","teardown",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Shipper / Logistics</label><input value={form.booth?.shipper||""} onChange={e=>setNested("booth","shipper",e.target.value)} placeholder="Abstract, FedEx…" style={inp}/></div>
+          <div><label style={lbl}>Tracking Number</label><input value={form.booth?.trackingNumber||""} onChange={e=>setNested("booth","trackingNumber",e.target.value)} style={inp}/></div>
+          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Swag & Materials</label>
+            <textarea rows={2} value={form.swag||""} onChange={e=>set("swag",e.target.value)} placeholder="Brochures, branded items, one-pagers, USB drives…" style={{...inp,resize:"vertical"}}/>
+          </div>
+          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Booth Notes</label>
+            <textarea rows={2} value={form.booth?.notes||""} onChange={e=>setNested("booth","notes",e.target.value)} placeholder="Corner booth, A/V needs, special instructions…" style={{...inp,resize:"vertical"}}/>
+          </div>
+        </div>}
+
+        {/* ── HOTEL ── */}
+        {section==="hotel"&&<div style={{display:"grid",gap:14}}>
+          <div><label style={lbl}>Hotel Name</label><input value={form.hotel?.name||""} onChange={e=>setNested("hotel","name",e.target.value)} placeholder="e.g. Omni William Penn Hotel" style={inp}/></div>
+          <div><label style={lbl}>Hotel Website</label><input value={form.hotel?.website||""} onChange={e=>setNested("hotel","website",e.target.value)} placeholder="https://…" style={inp}/>
+            {form.hotel?.website&&<a href={form.hotel.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#3b82f6",marginTop:4,display:"inline-block"}}>↗ Open</a>}
+          </div>
+          <div><label style={lbl}>Notes</label>
+            <textarea rows={4} value={form.hotel?.notes||""} onChange={e=>setNested("hotel","notes",e.target.value)} placeholder="Room block rate, booking deadline, check-in info, parking, shuttle…" style={{...inp,resize:"vertical"}}/>
+          </div>
+        </div>}
+
+        {/* ── SPONSOR ── */}
+        {section==="sponsor"&&<div style={{display:"grid",gap:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#0f1923",borderRadius:8,border:`1px solid ${form.hasSponsor?"#f59e0b":"#2d3f52"}`}}>
+            <button onClick={()=>set("hasSponsor",!form.hasSponsor)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSponsor?"#f59e0b":"#2d3f52",flexShrink:0}}>
+              <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:form.hasSponsor?23:3,transition:"left 0.2s"}}/>
+            </button>
+            <div><div style={{fontSize:14,color:"#e8dcc8",fontWeight:600}}>We have a sponsorship</div></div>
+          </div>
+          {form.hasSponsor&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div><label style={lbl}>Sponsorship Level</label>
+              <select value={form.sponsorship?.level||"Exhibitor"} onChange={e=>setNested("sponsorship","level",e.target.value)} style={{...inp,cursor:"pointer"}}>
+                {["Exhibitor","Bronze","Silver","Gold","Platinum","Title","Custom"].map(l=><option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div><label style={lbl}>Amount ($)</label><input type="number" value={form.sponsorship?.amount||""} onChange={e=>setNested("sponsorship","amount",e.target.value)} style={inp}/></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>What's Included</label>
+              <textarea rows={2} value={form.sponsorship?.includes||""} onChange={e=>setNested("sponsorship","includes",e.target.value)} placeholder="Logo placement, session naming, speaking slot…" style={{...inp,resize:"vertical"}}/>
+            </div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Sponsorship Notes (legacy field)</label>
+              <textarea rows={2} value={form.sponsorNotes||""} onChange={e=>set("sponsorNotes",e.target.value)} style={{...inp,resize:"vertical"}}/>
+            </div>
+          </div>}
+          {!form.hasSponsor&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No sponsorship for this show.</div>}
+        </div>}
+
+        {/* ── SPEAKING ── */}
+        {section==="speaking"&&<div style={{display:"grid",gap:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#0f1923",borderRadius:8,border:`1px solid ${form.hasSpeaking?"#3b82f6":"#2d3f52"}`}}>
+            <button onClick={()=>set("hasSpeaking",!form.hasSpeaking)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSpeaking?"#3b82f6":"#2d3f52",flexShrink:0}}>
+              <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:form.hasSpeaking?23:3,transition:"left 0.2s"}}/>
+            </button>
+            <div><div style={{fontSize:14,color:"#e8dcc8",fontWeight:600}}>We have a speaking engagement</div></div>
+          </div>
+          {form.hasSpeaking&&<div style={{display:"grid",gap:12}}>
+            <div><label style={lbl}>Session Title</label><input value={form.speakingTitle||""} onChange={e=>set("speakingTitle",e.target.value)} placeholder="The Future of Student Transportation" style={inp}/></div>
+            <div><label style={lbl}>Speaker(s)</label><input value={form.speakingWho||""} onChange={e=>set("speakingWho",e.target.value)} placeholder="Edmund Dixon, Mary Beth Lisy" style={inp}/></div>
+            <div><label style={lbl}>When</label><input value={form.speakingWhen||""} onChange={e=>set("speakingWhen",e.target.value)} placeholder="Thursday Nov 7, 2:00 PM" style={inp}/></div>
+          </div>}
+          {!form.hasSpeaking&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No speaking engagement for this show.</div>}
+        </div>}
+
+        {/* ── BUDGET ── */}
+        {section==="budget"&&<div style={{display:"grid",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {[["booth","Booth / Registration"],["travel","Travel"],["hotel","Hotel"],["swag","Swag / Materials"],["other","Sponsorship / Other"]].map(([k,label])=>(
+              <div key={k}><label style={lbl}>{label} ($)</label>
+                <input type="number" value={form.budget?.[k]||""} onChange={e=>setNested("budget",k,parseFloat(e.target.value)||0)} placeholder="0" style={inp}/>
+              </div>
+            ))}
+            <div style={{gridColumn:"1/-1",padding:"12px 16px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:14,color:"#8a9bb0"}}>Total</span>
+              <span style={{fontSize:20,fontWeight:700,color:"#c9a84c"}}>${(Object.values(form.budget||{}).reduce((a,b)=>a+(parseFloat(b)||0),0)).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>}
+
+        {/* ── REMINDERS ── */}
+        {section==="reminders"&&<div style={{display:"grid",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,alignItems:"end"}}>
+            <div><label style={lbl}>New Reminder</label><input value={newRem.text} onChange={e=>setNewRem(r=>({...r,text:e.target.value}))} placeholder="e.g. Ship booth materials" style={inp}/></div>
+            <div><label style={lbl}>Due Date</label><input type="date" value={newRem.date} onChange={e=>setNewRem(r=>({...r,date:e.target.value}))} style={inp}/></div>
+            <button onClick={addReminder} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"8px 16px",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>+ Add</button>
+          </div>
+          {form.reminders.length===0&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No reminders yet.</div>}
+          {form.reminders.map((r,i)=>{
+            const days=daysUntil(r.date);
+            const overdue=!r.done&&days!==null&&days<0;
+            const soon=!r.done&&days!==null&&days<=3&&days>=0;
+            return <div key={r.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#0f1923",borderRadius:8,border:`1px solid ${overdue?"#ef444433":soon?"#f59e0b33":"#2d3f52"}`,opacity:r.done?0.5:1}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:r.done?"#22c55e":overdue?"#ef4444":soon?"#f59e0b":"#3b82f6",flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,textDecoration:r.done?"line-through":"none"}}>{r.text}</div>
+                <div style={{fontSize:11,color:overdue?"#ef4444":soon?"#f59e0b":"#8a9bb0"}}>{fmtDate(r.date)}{overdue?" · OVERDUE":soon?` · ${days===0?"Today":`${days}d`}`:""}
+                </div>
+              </div>
+              <button onClick={()=>toggleRem(i)} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>{r.done?"Undo":"Done"}</button>
+              <button onClick={()=>deleteRem(i)} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>✕</button>
+            </div>;
+          })}
+        </div>}
+
+        {/* ── RECEIPTS ── */}
+        {section==="receipts"&&<div style={{display:"grid",gap:12}}>
+          <div className="receipt-zone"
+            onDrop={e=>{e.preventDefault();e.currentTarget.classList.remove("drag-over");handleReceiptFile(e.dataTransfer.files);}}
+            onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add("drag-over");}}
+            onDragLeave={e=>e.currentTarget.classList.remove("drag-over")}
+            onClick={()=>fileRef.current.click()}>
+            <div style={{fontSize:28,marginBottom:8}}>🧾</div>
+            <div style={{color:"#8a9bb0",fontSize:13}}>Drop receipts here or <strong style={{color:"#c9a84c"}}>click to upload</strong></div>
+            <div style={{fontSize:11,color:"#4a5a6a",marginTop:4}}>PDF, images — up to 5MB each</div>
+          </div>
+          <input ref={fileRef} type="file" multiple style={{display:"none"}} onChange={e=>{handleReceiptFile(e.target.files);e.target.value="";}}/>
+          {form.receipts.map(r=>(
+            <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52"}}>
+              <span style={{fontSize:18}}>{r.type?.includes("pdf")?"📄":r.type?.includes("image")?"🖼":"📎"}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13}}>{r.name}</div>
+                <div style={{fontSize:11,color:"#8a9bb0"}}>{r.size}{r.addedAt?` · ${new Date(r.addedAt).toLocaleDateString()}`:""}</div>
+              </div>
+              <button onClick={()=>downloadReceipt(r)} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>⬇</button>
+              <button onClick={()=>deleteReceipt(r.id)} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>✕</button>
+            </div>
+          ))}
+          {form.receipts.length===0&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"12px 0"}}>No receipts uploaded yet.</div>}
+        </div>}
+
+
+
+        {/* ── CHANGE LOG ── */}
+        {section==="changelog"&&<div style={{display:"grid",gap:8}}>
+          {(!form.changeLog||form.changeLog.length===0)&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"32px 0"}}>No changes logged yet.</div>}
+          {(form.changeLog||[]).slice().reverse().map((c,i)=>(
+            <div key={i} style={{display:"flex",gap:10,padding:"8px 12px",background:"#0f1923",borderRadius:6,border:"1px solid #1a2d3d",fontSize:12}}>
+              <span style={{color:"#4a5a6a",fontFamily:"monospace",fontSize:10,whiteSpace:"nowrap",paddingTop:2}}>{new Date(c.ts).toLocaleString()}</span>
+              <span style={{color:"#8a9bb0",whiteSpace:"nowrap"}}>{c.user}</span>
+              <span style={{flex:1,color:"#e8dcc8"}}>{c.field}{c.newVal?`: ${c.oldVal||"—"} → ${c.newVal}`:""}</span>
+            </div>
+          ))}
+        </div>}
+
+      </div>
+
+      {/* Footer */}
+      <div style={{padding:"14px 22px",borderTop:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",gap:8}}>
+          {!isNew&&<button onClick={()=>onDelete(show.id)} style={{background:"#3d1515",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Delete</button>}
+          {!isNew&&<button onClick={()=>generateICS(form)} style={{background:"#0f1923",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>📅 .ics</button>}
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Cancel</button>
+          <button onClick={()=>onSave({...form,department:normalizeDept(form.department||"")})} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>💾 Save</button>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+// ─── SETTINGS MODAL ───────────────────────────────────────────────────────────
+function SettingsModal({onClose,toast}){
+  const [s,setS]=useState(()=>({userName:"Matt Schiesl",teamsWebhook:"",notifyChanges:true,notifyReminders:true,...getSettings()}));
+  const set=(k,v)=>setS(prev=>({...prev,[k]:v}));
+  const save=()=>{saveSettings(s);toast("Settings saved","success");onClose();};
+  const inp={width:"100%",background:"#0f1923",border:"1px solid #2d3f52",borderRadius:6,padding:"8px 12px",color:"#e8dcc8",fontSize:14,outline:"none"};
+  const lbl={fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"block"};
+  const testWebhook=async()=>{
+    if(!s.teamsWebhook){toast("Enter a webhook URL first","error");return;}
+    try{
+      await fetch(s.teamsWebhook,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions",summary:"Test",themeColor:"F5A623",title:"✅ First Student Trade Show PMS — Test Notification",text:"Webhook connected successfully!"})});
+      toast("Test sent to Teams!","success");
+    }catch(e){toast("Webhook failed — check URL and CORS","error");}
+  };
+  return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal" style={{maxWidth:540}}>
+      <div style={{padding:"16px 22px",borderBottom:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <h2 style={{color:"#c9a84c",fontSize:17}}>⚙️ Settings</h2>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#8a9bb0",fontSize:24,cursor:"pointer"}}>×</button>
+      </div>
+      <div style={{padding:"20px 22px",display:"grid",gap:16}}>
+        <div><label style={lbl}>Your Name</label><input value={s.userName||""} onChange={e=>set("userName",e.target.value)} style={inp}/></div>
+        <div>
+          <label style={lbl}>Microsoft Teams Webhook URL</label>
+          <p style={{fontSize:11,color:"#4a6a7a",marginBottom:8}}>Paste an Incoming Webhook URL to get Teams alerts on show changes and reminders. <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" target="_blank" rel="noreferrer" style={{color:"#3b82f6"}}>How to set up →</a></p>
+          <div style={{display:"flex",gap:8}}>
+            <input value={s.teamsWebhook||""} onChange={e=>set("teamsWebhook",e.target.value)} placeholder="https://outlook.office.com/webhook/…" style={{...inp,flex:1}}/>
+            <button onClick={testWebhook} style={{background:"#0f1923",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"8px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",whiteSpace:"nowrap"}}>Test</button>
+          </div>
+        </div>
+        {[["notifyChanges","Notify on show changes"],["notifyReminders","Notify on reminders"]].map(([k,label])=>(
+          <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52"}}>
+            <span style={{fontSize:13}}>{label}</span>
+            <button onClick={()=>set(k,!s[k])} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:s[k]?"#c9a84c":"#2d3f52",flexShrink:0}}>
+              <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:s[k]?23:3,transition:"left 0.2s"}}/>
+            </button>
+          </div>
+        ))}
+      </div>
+      <div style={{padding:"14px 22px",borderTop:"1px solid #2d3f52",display:"flex",justifyContent:"flex-end",gap:10}}>
+        <button onClick={onClose} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Cancel</button>
+        <button onClick={save} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>Save Settings</button>
+      </div>
+    </div>
+  </div>;
+}
+
+// ─── PASSWORD GATE ────────────────────────────────────────────────────────────
+function getAuthed(){try{return sessionStorage.getItem("ts_auth")==="1";}catch(e){return false;}}
+function setAuthed(){try{sessionStorage.setItem("ts_auth","1");}catch(e){}}
+function LoginScreen({onAuth}){
+  const [pw,setPw]=useState("");
+  const [err,setErr]=useState(false);
+  const attempt=()=>{if(pw===PASSWORD){setAuthed();onAuth();}else{setErr(true);setPw("");setTimeout(()=>setErr(false),2000);}};
+  return <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"#1a2d3d",border:"1px solid #c9a84c",borderRadius:12,padding:"40px 48px",width:"100%",maxWidth:400,textAlign:"center"}}>
+      <div style={{fontSize:36,marginBottom:12}}>🗓️</div>
+      <h1 style={{fontSize:22,fontWeight:700,color:"#c9a84c",marginBottom:6}}>First Student</h1>
+      <p style={{color:"#8a9bb0",fontSize:14,marginBottom:28}}>Trade Show PMS</p>
+      <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&attempt()} placeholder="Enter password"
+        style={{width:"100%",background:"#0f1923",border:`1.5px solid ${err?"#ef4444":"#2d3f52"}`,borderRadius:8,padding:"11px 16px",color:"#e8dcc8",fontSize:15,outline:"none",fontFamily:"inherit",marginBottom:12,textAlign:"center"}}/>
+      {err&&<p style={{color:"#ef4444",fontSize:13,marginBottom:8}}>Incorrect password.</p>}
+      <button onClick={attempt} style={{width:"100%",background:"#c9a84c",border:"none",color:"#0f1923",padding:"11px",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit"}}>Enter</button>
+    </div>
+  </div>;
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function exportData(shows){
+  const json=JSON.stringify(shows,null,2);
+  const blob=new Blob([json],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=`fs-tradeshows-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+}
+function importDataFile(file,onSuccess,onError){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data))throw new Error("invalid");
+      onSuccess(data.map(s=>({...s,department:normalizeDept(s.department||"")})));
+    }catch(err){onError("Could not read file.");}
+  };
+  reader.readAsText(file);
+}
+
+// ─── TEAMS NOTIFY ─────────────────────────────────────────────────────────────
+async function sendTeams(webhook,title,message){
+  if(!webhook)return;
+  try{await fetch(webhook,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions",summary:title,themeColor:"F5A623",
+      title:`🗓 First Student Trade Shows — ${title}`,text:message})});}catch(e){}
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function App(){
+  const [authed,setAuthed]=useState(getAuthed);
+  const [shows,setShows]=useState(()=>{
+    const stored=getStored();
+    return (stored||INITIAL_SHOWS).map(s=>({...s,department:normalizeDept(s.department||"")}));
+  });
+  const [tab,setTab]=useState("calendar");
+  const [editShow,setEditShow]=useState(null);
+  const [modalOpen,setModalOpen]=useState(false);
+  const [isNew,setIsNew]=useState(false);
+  const [settingsOpen,setSettingsOpen]=useState(false);
+  const [nextId,setNextId]=useState(()=>Math.max(0,...(getStored()||INITIAL_SHOWS).map(s=>s.id||0))+1);
+  const [toastMsg,setToastMsg]=useState(null);
+  const fileRef=useRef();
+
+  useEffect(()=>{saveStored(shows);},[shows]);
+
+  if(!authed) return <LoginScreen onAuth={()=>setAuthed(true)}/>;
+
+  const sorted=[...shows].sort((a,b)=>a.start.localeCompare(b.start));
+  const alerts=generateAlerts(shows);
+  const settings=getSettings();
+
+  const toast=(msg,type="info")=>setToastMsg({msg,type});
+
+  const openEdit=s=>{setEditShow(s);setIsNew(false);setModalOpen(true);};
+  const openNew=()=>{setEditShow(null);setIsNew(true);setModalOpen(true);};
+
+  const handleSave=form=>{
+    const normalized={...form,department:normalizeDept(form.department||"")};
+    if(isNew){
+      const newShow={...normalized,id:nextId,changeLog:[{user:settings.userName||"User",field:"Show created",oldVal:"",newVal:"",ts:Date.now()}]};
+      setShows(s=>[...s,newShow].sort((a,b)=>a.start.localeCompare(b.start)));
+      setNextId(n=>n+1);
+      toast(`${form.name} added`,"success");
+      sendTeams(settings.teamsWebhook,`New Show: ${form.name}`,`Added ${form.name} — ${form.start} in ${form.city||"TBD"}`);
+    }else{
+      const old=shows.find(x=>x.id===normalized.id);
+      const changes=[];
+      if(old){
+        if(old.status!==normalized.status) changes.push({user:settings.userName||"User",field:"Status",oldVal:old.status,newVal:normalized.status,ts:Date.now()});
+        if(old.location!==normalized.city) changes.push({user:settings.userName||"User",field:"City",oldVal:old.city,newVal:normalized.city,ts:Date.now()});
+        if(old.hotel?.confirmNumber!==normalized.hotel?.confirmNumber&&normalized.hotel?.confirmNumber)
+          changes.push({user:settings.userName||"User",field:"Hotel confirmed",oldVal:old.hotel?.confirmNumber||"—",newVal:normalized.hotel?.confirmNumber,ts:Date.now()});
+      }
+      const updatedShow={...normalized,changeLog:[...(normalized.changeLog||[]),...changes]};
+      setShows(s=>s.map(x=>x.id===normalized.id?updatedShow:x));
+      toast(`${form.name} saved`,"success");
+      if(changes.length&&settings.notifyChanges)
+        sendTeams(settings.teamsWebhook,`${form.name} Updated`,changes.map(c=>`**${c.field}**: ${c.oldVal||"—"} → ${c.newVal}`).join("\n"));
+    }
+    setModalOpen(false);
+  };
+
+  const handleDelete=id=>{
+    const s=shows.find(x=>x.id===id);
+    if(confirm(`Delete "${s?.name}"? This cannot be undone.`)){
+      setShows(s=>s.filter(x=>x.id!==id));
+      setModalOpen(false);
+      toast(`${s?.name} deleted`,"warning");
+    }
+  };
+
+  const handleImport=e=>{
+    const file=e.target.files[0];if(!file)return;
+    importDataFile(file,data=>{
+      if(!confirm(`Replace all ${shows.length} shows with ${data.length} imported shows?`))return;
+      setShows(data.sort((a,b)=>a.start.localeCompare(b.start)));
+      setNextId(Math.max(0,...data.map(s=>s.id||0))+1);
+      toast(`Imported ${data.length} shows`,"success");
+    },msg=>toast(msg,"error"));
+    e.target.value="";
+  };
+
+  const TABS=[
+    {id:"calendar",label:"📅 Calendar"},
+    {id:"cards",label:"📋 Cards"},
+    {id:"attendees",label:"👥 Attendees"},
+    {id:"alerts",label:`⚡ Alerts${alerts.length>0?` (${alerts.length})`:""}`,alert:alerts.length>0},
+  ];
+  const tabBase={padding:"10px 20px",borderRadius:"6px 6px 0 0",fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",background:"transparent",color:"#8a9bb0",fontWeight:400,transition:"all 0.15s"};
+  const tabOn={...tabBase,background:"#1a2d3d",color:"#c9a84c",fontWeight:700,borderBottom:"2px solid #c9a84c"};
+  const toolBtn={background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"6px 13px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",transition:"all 0.15s"};
+
+  return <div style={{minHeight:"100vh",background:"#0f1923"}}>
+    {/* Header */}
+    <div style={{background:"linear-gradient(135deg,#1a2d3d,#0f1923)",borderBottom:"2px solid #c9a84c",padding:"22px 32px 0"}}>
+      <div style={{maxWidth:1280,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:12}}>
+          <div>
+            <h1 style={{fontSize:28,fontWeight:700,color:"#c9a84c",letterSpacing:"-0.5px"}}>First Student Trade Show PMS</h1>
+            <p style={{color:"#8a9bb0",fontSize:13,marginTop:2}}>{shows.length} conferences · {alerts.length>0?<span style={{color:"#ef4444",fontWeight:700}}>{alerts.length} alert{alerts.length!==1?"s":""}</span>:"all clear"}</p>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>exportData(shows)} style={toolBtn}>⬇ Export</button>
+            <button onClick={()=>fileRef.current.click()} style={toolBtn}>⬆ Import</button>
+            <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/>
+            <button onClick={()=>setSettingsOpen(true)} style={toolBtn}>⚙️ Settings</button>
+            <button onClick={openNew} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"9px 18px",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}}>+ Add Show</button>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:2,marginTop:14}}>
+          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{...(tab===t.id?tabOn:tabBase),color:t.alert&&tab!==t.id?"#ef4444":tab===t.id?"#c9a84c":"#8a9bb0"}}>{t.label}</button>)}
+        </div>
+      </div>
+    </div>
+
+    {/* Tip bar */}
+    <div style={{background:"#0d1f2d",borderBottom:"1px solid #1a2d3d",padding:"8px 32px"}}>
+      <div style={{maxWidth:1280,margin:"0 auto",fontSize:11,color:"#4a6a7a"}}>
+        💡 <strong style={{color:"#5a8a9a"}}>Export</strong> to save your data · <strong style={{color:"#5a8a9a"}}>Import</strong> to sync across computers · Re-upload to GitHub to publish updates for the team
+      </div>
+    </div>
+
+    {/* Content */}
+    <div style={{maxWidth:1280,margin:"0 auto",padding:"24px 32px"}}>
+      {tab==="calendar"&&<CalendarView shows={sorted} onEdit={openEdit}/>}
+      {tab==="cards"&&<CardView shows={sorted} onEdit={openEdit}/>}
+      {tab==="attendees"&&<AttendeesView shows={sorted} onEdit={openEdit}/>}
+      {tab==="alerts"&&<AlertsView shows={sorted} onEdit={openEdit}/>}
+    </div>
+
+    {/* Modals */}
+    {modalOpen&&<EditModal show={isNew?null:editShow} onSave={handleSave} onClose={()=>setModalOpen(false)} onDelete={handleDelete} toast={toast}/>}
+    {settingsOpen&&<SettingsModal onClose={()=>setSettingsOpen(false)} toast={toast}/>}
+    {toastMsg&&<Toast msg={toastMsg.msg} type={toastMsg.type} onDone={()=>setToastMsg(null)}/>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
