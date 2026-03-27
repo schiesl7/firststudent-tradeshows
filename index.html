@@ -4,79 +4,72 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>First Student — Trade Show PMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
+:root {
+  --fs-navy:#002856;--fs-navy-light:#003a78;--fs-navy-dark:#001a3a;
+  --fs-yellow:#FFD100;--fs-yellow-dark:#E6BC00;
+  --fs-white:#FFFFFF;--fs-off-white:#F4F6F9;
+  --fs-gray-100:#EEF1F6;--fs-gray-200:#D6DCE8;--fs-gray-400:#8A9BB8;--fs-gray-600:#4A5F7A;
+  --fs-red:#D0021B;--fs-green:#1A8C4E;--fs-orange:#F5A623;--fs-blue:#2979C8;--fs-purple:#7B4FBE;
+  --shadow-sm:0 1px 4px rgba(0,40,86,0.10);--shadow-md:0 4px 16px rgba(0,40,86,0.13);--shadow-lg:0 8px 32px rgba(0,40,86,0.18);
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0f1923;font-family:'Georgia','Times New Roman',serif;color:#e8dcc8;}
+body{background:var(--fs-off-white);font-family:'Barlow',sans-serif;color:var(--fs-navy);line-height:1.5;}
 ::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-track{background:#0f1923;}
-::-webkit-scrollbar-thumb{background:#2d3f52;border-radius:3px;}
-input,select,textarea{font-family:inherit;}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
-.modal{background:#1a2d3d;border:1px solid #c9a84c;border-radius:10px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;}
-.show-card{transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;}
-.show-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
-.cal-cell{min-height:100px;border:1px solid #1a2d3d;border-radius:4px;padding:4px 3px;background:#111e2b;vertical-align:top;overflow:hidden;}
-.cal-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.1s;}
+::-webkit-scrollbar-track{background:var(--fs-gray-100);}
+::-webkit-scrollbar-thumb{background:var(--fs-gray-200);border-radius:3px;}
+input,select,textarea,button{font-family:'Barlow',sans-serif;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,20,50,0.65);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);border-top:4px solid var(--fs-yellow);}
+.show-card{transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;background:#fff;border-radius:8px;border:1px solid var(--fs-gray-200);box-shadow:var(--shadow-sm);}
+.show-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.cal-cell{min-height:100px;border:1px solid var(--fs-gray-200);border-radius:4px;padding:4px 3px;background:#fff;overflow:hidden;}
+.cal-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.1s;font-weight:600;}
 .cal-event:hover{opacity:0.8;}
-.filter-pill{cursor:pointer;transition:all 0.15s;font-family:inherit;border:none;}
-.toast{position:fixed;bottom:24px;right:24px;background:#1a2d3d;border:1px solid #c9a84c;border-radius:8px;padding:12px 18px;color:#e8dcc8;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:slideIn 0.3s ease;}
+.filter-pill{cursor:pointer;transition:all 0.15s;border:none;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--fs-navy);border-left:4px solid var(--fs-yellow);border-radius:8px;padding:13px 20px;color:#fff;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg);animation:slideIn 0.3s ease;}
 @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-.progress-bar{height:4px;background:#1a2d3d;border-radius:2px;overflow:hidden;margin-top:6px;}
-.progress-fill{height:100%;background:#c9a84c;border-radius:2px;transition:width 0.4s ease;}
-.tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
-.receipt-zone{border:2px dashed #2d3f52;border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;}
-.receipt-zone:hover,.receipt-zone.drag-over{border-color:#c9a84c;background:rgba(201,168,76,0.04);}
+.progress-bar{height:5px;background:var(--fs-gray-200);border-radius:3px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;background:var(--fs-yellow);border-radius:3px;transition:width 0.4s ease;}
+.receipt-zone{border:2px dashed var(--fs-gray-200);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.receipt-zone:hover,.receipt-zone.drag-over{border-color:var(--fs-yellow);background:rgba(255,209,0,0.05);}
+.login-wrap{min-height:100vh;background:var(--fs-navy);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;}
+.login-wrap::before{content:'';position:absolute;top:-80px;right:-80px;width:400px;height:400px;background:var(--fs-yellow);opacity:0.05;border-radius:50%;}
+.login-wrap::after{content:'';position:absolute;bottom:-60px;left:-60px;width:300px;height:300px;background:var(--fs-yellow);opacity:0.04;border-radius:50%;}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const STORAGE_KEY   = "fs_pms_v3";
-const SETTINGS_KEY  = "fs_pms_settings_v3";
-// leads now handled by Formspree
-const PASSWORD      = "FirstStudent2026";
-
-const DEPT_ALIAS = {
-  "Alt":"First Alt","First Alt":"First Alt",
-  "Services":"First Services","First Serves":"First Services","First Services":"First Services",
-  "DBD":"DBD","Charter":"Charter","Ops":"Ops","OPS":"Ops","AGM":"AGM","Location":"Location","Special Ed":"Special Ed",
-};
-function normalizeDept(raw){
-  if(!raw) return "";
-  return raw.split(",").map(d=>{const t=d.trim();return DEPT_ALIAS[t]||t;})
-    .filter((v,i,a)=>v&&a.indexOf(v)===i).join(", ");
-}
-
+const { useState, useEffect, useRef } = React;
+ 
+const STORAGE_KEY="fs_pms_v3",SETTINGS_KEY="fs_pms_settings_v3",PW_KEY="fs_pms_pw_v1",DEFAULT_PASSWORD="FirstStudent2026";
+function getPassword(){try{return localStorage.getItem(PW_KEY)||DEFAULT_PASSWORD;}catch(e){return DEFAULT_PASSWORD;}}
+function savePassword(pw){try{localStorage.setItem(PW_KEY,pw);}catch(e){}}
+ 
+const DEPT_ALIAS={"Alt":"First Alt","First Alt":"First Alt","Services":"First Services","First Serves":"First Services","First Services":"First Services","DBD":"DBD","Charter":"Charter","Ops":"Ops","OPS":"Ops","AGM":"AGM","Location":"Location","Special Ed":"Special Ed"};
+function normalizeDept(raw){if(!raw)return "";return raw.split(",").map(d=>{const t=d.trim();return DEPT_ALIAS[t]||t;}).filter((v,i,a)=>v&&a.indexOf(v)===i).join(", ");}
+ 
 const DEPT_COLORS={
-  "Charter":       {bg:"#fef3c7",border:"#f59e0b",text:"#92400e",cal:"#f59e0b"},
-  "First Alt":     {bg:"#dbeafe",border:"#3b82f6",text:"#1e3a8a",cal:"#3b82f6"},
-  "First Services":{bg:"#dcfce7",border:"#22c55e",text:"#14532d",cal:"#22c55e"},
-  "First Serves":  {bg:"#dcfce7",border:"#22c55e",text:"#14532d",cal:"#22c55e"},
-  "DBD":           {bg:"#f3e8ff",border:"#a855f7",text:"#581c87",cal:"#a855f7"},
-  "Ops":           {bg:"#fce7f3",border:"#ec4899",text:"#831843",cal:"#ec4899"},
-  "AGM":           {bg:"#fdf4ff",border:"#c084fc",text:"#6b21a8",cal:"#c084fc"},
-  "Location":      {bg:"#fff7ed",border:"#f97316",text:"#7c2d12",cal:"#f97316"},
-  "Special Ed":    {bg:"#f0fdf4",border:"#4ade80",text:"#166534",cal:"#4ade80"},
-  "default":       {bg:"#f1f5f9",border:"#94a3b8",text:"#334155",cal:"#94a3b8"},
+  "Charter":{bg:"#FFF8E1",border:"#FFD100",text:"#7A5C00",cal:"#E6BC00"},
+  "First Alt":{bg:"#E3EEF9",border:"#2979C8",text:"#0B3A6E",cal:"#2979C8"},
+  "First Services":{bg:"#E6F4ED",border:"#1A8C4E",text:"#0D4A28",cal:"#1A8C4E"},
+  "First Serves":{bg:"#E6F4ED",border:"#1A8C4E",text:"#0D4A28",cal:"#1A8C4E"},
+  "DBD":{bg:"#EFE9F9",border:"#7B4FBE",text:"#3B1F70",cal:"#7B4FBE"},
+  "Ops":{bg:"#FEF0E6",border:"#F5A623",text:"#7A3C00",cal:"#F5A623"},
+  "AGM":{bg:"#E8F5FC",border:"#0099CC",text:"#004D6B",cal:"#0099CC"},
+  "Location":{bg:"#FFF0E8",border:"#E05A1A",text:"#7A2600",cal:"#E05A1A"},
+  "Special Ed":{bg:"#E6F4ED",border:"#1A8C4E",text:"#0D4A28",cal:"#1A8C4E"},
+  "default":{bg:"#EEF1F6",border:"#8A9BB8",text:"#2E4060",cal:"#8A9BB8"},
 };
 const CANONICAL_DEPTS=["Charter","First Alt","First Services","DBD","Ops"];
-function getDeptColor(dept){
-  if(!dept) return DEPT_COLORS["default"];
-  const first=normalizeDept(dept).split(",")[0].trim();
-  return DEPT_COLORS[first]||DEPT_COLORS["default"];
-}
-function showMatchesDept(show,filterDept){
-  if(filterDept==="All") return true;
-  return normalizeDept(show.department).split(",").map(d=>d.trim()).includes(filterDept);
-}
-
-// ─── INITIAL DATA ─────────────────────────────────────────────────────────────
+function getDeptColor(dept){if(!dept)return DEPT_COLORS["default"];const first=normalizeDept(dept).split(",")[0].trim();return DEPT_COLORS[first]||DEPT_COLORS["default"];}
+function showMatchesDept(show,fd){if(fd==="All")return true;return normalizeDept(show.department).split(",").map(d=>d.trim()).includes(fd);}
+ 
 const INITIAL_SHOWS=[
   {id:1,name:"SESPTC & VAPT",start:"2025-07-07",end:"2025-07-11",city:"Richmond, VA",department:"Alt",attendees:"Blake Smith, Maurice Murphy",notes:"Jul 10, 2025"},
   {id:2,name:"MOAPT",start:"2025-07-08",end:"2025-07-10",city:"St. Charles, MO",department:"Location",attendees:"John Jacob",notes:"Wednesday, July 9, 3-6:30pm"},
@@ -144,160 +137,97 @@ const INITIAL_SHOWS=[
   {id:64,name:"WAPT",start:"2026-06-28",end:"2026-07-01",city:"Kennewick, WA",department:"First Alt",attendees:"Bridget Geyer, Branden Seeberger",notes:""},
   {id:65,name:"MIAPT",start:"2026-06-30",end:"2026-06-30",city:"Boyne Mountain, MI",department:"",attendees:"",notes:""},
 ];
-
-// ─── STORAGE ──────────────────────────────────────────────────────────────────
-function getStored(){
-  try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}
-}
-function saveStored(shows){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(shows));}catch(e){}
-}
-function getSettings(){
-  try{const s=localStorage.getItem(SETTINGS_KEY);return s?JSON.parse(s):{};}catch(e){return{};}
-}
-function saveSettings(s){
-  try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}catch(e){}
-}
-function getLeads(){return[];}
-function saveLeads(){}
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+ 
+function getStored(){try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+function saveStored(shows){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(shows));}catch(e){}}
+function getSettings(){try{const s=localStorage.getItem(SETTINGS_KEY);return s?JSON.parse(s):{};}catch(e){return{};}}
+function saveSettings(s){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}catch(e){}}
+ 
 function fmtRange(start,end){
-  const s=new Date(start+"T12:00:00"),e=new Date(end+"T12:00:00");
-  const o={month:"short",day:"numeric"};
-  if(start===end) return s.toLocaleDateString("en-US",o);
-  if(s.getMonth()===e.getMonth()&&s.getFullYear()===e.getFullYear())
-    return `${s.toLocaleDateString("en-US",o)} – ${e.getDate()}`;
+  const s=new Date(start+"T12:00:00"),e=new Date(end+"T12:00:00"),o={month:"short",day:"numeric"};
+  if(start===end)return s.toLocaleDateString("en-US",o);
+  if(s.getMonth()===e.getMonth()&&s.getFullYear()===e.getFullYear())return `${s.toLocaleDateString("en-US",o)} – ${e.getDate()}`;
   return `${s.toLocaleDateString("en-US",o)} – ${e.toLocaleDateString("en-US",o)}`;
 }
-function daysUntil(dateStr){
-  if(!dateStr) return null;
-  const today=new Date();today.setHours(0,0,0,0);
-  const dt=new Date(dateStr+"T00:00:00");
-  return Math.round((dt-today)/86400000);
-}
+function daysUntil(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(d+"T00:00:00")-t)/86400000);}
 function uid(){return "id_"+Date.now()+"_"+Math.random().toString(36).slice(2,6);}
-function fmtDate(d){
-  if(!d) return "—";
-  return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-}
-function completionPct(show){
-  const checks=[show.city,show.start,show.venue,show.booth?.number&&show.booth.number!=="TBD",
-    show.hotel?.confirmNumber,show.attendees,show.swag];
-  return Math.round(checks.filter(Boolean).length/checks.length*100);
-}
-function budgetTotal(show){
-  const b=show.budget||{};
-  return (b.booth||0)+(b.travel||0)+(b.hotel||0)+(b.swag||0)+(b.other||0);
-}
-
-// ─── ICS GENERATOR ───────────────────────────────────────────────────────────
+function fmtDate(d){if(!d)return "—";return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
+function completionPct(show){const c=[show.city,show.start,show.venue,show.booth?.number&&show.booth.number!=="TBD",show.hotel?.confirmNumber,show.attendees,show.swag];return Math.round(c.filter(Boolean).length/c.length*100);}
+function budgetTotal(show){const b=show.budget||{};return (b.booth||0)+(b.travel||0)+(b.hotel||0)+(b.swag||0)+(b.other||0);}
+ 
 function generateICS(show){
   const pad=n=>String(n).padStart(2,"0");
-  function toICSDate(ds){const d=new Date(ds+"T12:00:00");return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;}
+  function toD(ds){const d=new Date(ds+"T12:00:00");return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;}
   const endD=new Date(show.end+"T12:00:00");endD.setDate(endD.getDate()+1);
-  const endStr=`${endD.getFullYear()}${pad(endD.getMonth()+1)}${pad(endD.getDate())}`;
-  const desc=[
-    show.city?`Location: ${show.city}`:"",
-    show.venue?`Venue: ${show.venue}`:"",
-    show.website?`Website: ${show.website}`:"",
-    show.booth?.number?`Booth: ${show.booth.number}`:"",
-    show.hotel?.name?`Hotel: ${show.hotel.name}${show.hotel.confirmNumber?" ("+show.hotel.confirmNumber+")":""}`:"",
-    show.attendees?`Attendees: ${show.attendees}`:"",
-    show.hasSponsor&&show.sponsorNotes?`Sponsorship: ${show.sponsorNotes}`:"",
-    show.hasSpeaking&&show.speakingTitle?`Speaking: "${show.speakingTitle}" — ${show.speakingWho||""} (${show.speakingWhen||""})`:"",
-    show.notes?`Notes: ${show.notes}`:"",
-  ].filter(Boolean).join("\\n");
-  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//First Student Trade Show PMS//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH",
-    "BEGIN:VEVENT",`UID:tradeshow-${show.id}-${Date.now()}@firststudent`,
-    `DTSTART;VALUE=DATE:${toICSDate(show.start)}`,`DTEND;VALUE=DATE:${endStr}`,
-    `SUMMARY:${show.name}${show.city?" – "+show.city:""}`,`DESCRIPTION:${desc}`,
-    show.website?`URL:${show.website}`:"",show.city?`LOCATION:${show.city}`:"",
-    "END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
-  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=`${show.name.replace(/[^a-z0-9]/gi,"-")}.ics`;a.click();URL.revokeObjectURL(url);
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//First Student Trade Show PMS//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT",
+    `UID:tradeshow-${show.id}-${Date.now()}@firststudent`,`DTSTART;VALUE=DATE:${toD(show.start)}`,
+    `DTEND;VALUE=DATE:${endD.getFullYear()}${pad(endD.getMonth()+1)}${pad(endD.getDate())}`,
+    `SUMMARY:${show.name}${show.city?" – "+show.city:""}`,show.city?`LOCATION:${show.city}`:"","END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"}));
+  a.download=`${show.name.replace(/[^a-z0-9]/gi,"-")}.ics`;a.click();
 }
-
-// ─── TOAST ────────────────────────────────────────────────────────────────────
-function Toast({msg,type,onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,3200);return()=>clearTimeout(t);},[]);
-  const icons={success:"✅",error:"❌",warning:"⚠️",info:"ℹ️"};
-  return <div className="toast">{icons[type]||"ℹ️"} {msg} <span onClick={onDone} style={{marginLeft:8,cursor:"pointer",color:"#8a9bb0"}}>×</span></div>;
-}
-
-// ─── DEPT BADGES ─────────────────────────────────────────────────────────────
-function DeptBadges({department,size="sm"}){
-  if(!department) return <span style={{fontSize:11,color:"#4a5a6a",fontStyle:"italic"}}>No dept</span>;
-  const norm=normalizeDept(department);
-  return <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{norm.split(",").map(d=>{
-    const t=d.trim(),c=DEPT_COLORS[t]||DEPT_COLORS.default;
-    return <span key={t} style={{fontSize:size==="xs"?9:10,fontWeight:700,padding:size==="xs"?"2px 6px":"2px 8px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`,textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>{t}</span>;
-  })}</div>;
-}
-
-// ─── DEPT FILTER ─────────────────────────────────────────────────────────────
-function DeptFilter({value,onChange,extra}){
-  const base={padding:"5px 13px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",background:"transparent",color:"#8a9bb0",border:"1.5px solid #2d3f52",fontWeight:400};
-  const on={...base,background:"#c9a84c",color:"#0f1923",border:"1.5px solid #c9a84c",fontWeight:700};
-  return <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
-    <span style={{fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1}}>Dept</span>
-    {["All",...CANONICAL_DEPTS].map(d=><button key={d} className="filter-pill" onClick={()=>onChange(d)} style={value===d?on:base}>{d}</button>)}
-    {extra}
-  </div>;
-}
-
-// ─── ALERTS ENGINE ────────────────────────────────────────────────────────────
+ 
 function generateAlerts(shows){
   const alerts=[];
   shows.forEach(show=>{
-    if(show.status==="complete") return;
+    if(show.status==="complete")return;
     const days=daysUntil(show.start);
-    if(days!==null&&days>=0&&days<=7) alerts.push({type:"urgent",text:`${show.name} is ${days===0?"TODAY":`in ${days} day${days!==1?"s":""}`}`,showId:show.id});
+    if(days!==null&&days>=0&&days<=7)alerts.push({type:"urgent",text:`${show.name} is ${days===0?"TODAY":`in ${days} day${days!==1?"s":""}`}`,showId:show.id});
     (show.reminders||[]).forEach(r=>{
-      if(r.done) return;
+      if(r.done)return;
       const rd=daysUntil(r.date);
-      if(rd!==null&&rd<0) alerts.push({type:"urgent",text:`[${show.name}] OVERDUE: ${r.text}`,showId:show.id});
-      else if(rd!==null&&rd<=3) alerts.push({type:"warning",text:`[${show.name}] Due soon: ${r.text} (${fmtDate(r.date)})`,showId:show.id});
+      if(rd!==null&&rd<0)alerts.push({type:"urgent",text:`[${show.name}] OVERDUE: ${r.text}`,showId:show.id});
+      else if(rd!==null&&rd<=3)alerts.push({type:"warning",text:`[${show.name}] Due soon: ${r.text} (${fmtDate(r.date)})`,showId:show.id});
     });
-    if(!show.hotel?.confirmNumber&&days!==null&&days<=30&&days>=0)
-      alerts.push({type:"info",text:`[${show.name}] Hotel not confirmed`,showId:show.id});
+    if(!show.hotel?.confirmNumber&&days!==null&&days<=30&&days>=0)alerts.push({type:"info",text:`[${show.name}] Hotel not confirmed`,showId:show.id});
   });
   return alerts;
 }
-
-
-
-// ─── SHOW CARD (cards view) ───────────────────────────────────────────────────
-function ShowCard({show,onEdit}){
-  const c=getDeptColor(show.department);
-  const pct=completionPct(show);
-  const total=budgetTotal(show);
-  const days=daysUntil(show.start);
-  const openRem=(show.reminders||[]).filter(r=>!r.done).length;
-  return <div className="show-card" onClick={()=>onEdit(show)} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderLeft:`4px solid ${c.border}`,borderRadius:8,padding:"14px 16px"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
-      <h3 style={{fontSize:15,fontWeight:700,color:"#e8dcc8",lineHeight:1.3,margin:0}}>{show.name}</h3>
-      <div style={{display:"flex",gap:4,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
-        {show.hasSponsor&&<span title="Sponsorship" style={{fontSize:11,background:"#fef3c722",border:"1px solid #f59e0b",color:"#f59e0b",borderRadius:4,padding:"1px 5px"}}>🏆</span>}
-        {show.hasSpeaking&&<span title="Speaking" style={{fontSize:11,background:"#dbeafe22",border:"1px solid #3b82f6",color:"#3b82f6",borderRadius:4,padding:"1px 5px"}}>🎤</span>}
-        {show.booth?.number&&show.booth.number!=="TBD"&&<span title={`Booth ${show.booth.number}`} style={{fontSize:10,background:"#f3e8ff22",border:"1px solid #a855f7",color:"#a855f7",borderRadius:4,padding:"1px 5px"}}>#{show.booth.number}</span>}
-        {openRem>0&&<span title={`${openRem} open reminders`} style={{fontSize:10,background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:4,padding:"1px 5px"}}>⏰{openRem}</span>}
-      </div>
-    </div>
-    <div style={{fontSize:12,color:"#c9a84c",fontWeight:600,marginBottom:3,fontStyle:"italic"}}>{fmtRange(show.start,show.end)}</div>
-    {show.city&&<div style={{fontSize:12,color:"#8a9bb0",marginBottom:2}}>📍 {show.city}</div>}
-    {show.venue&&<div style={{fontSize:11,color:"#4a6a7a",marginBottom:4}}>🏛 {show.venue}</div>}
-    {show.website&&<div style={{fontSize:11,color:"#3b82f6",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>🔗 {show.website.replace(/^https?:\/\//,"")}</div>}
-    <div style={{marginTop:6,marginBottom:8}}><DeptBadges department={show.department}/></div>
-    {days!==null&&days>=0&&days<=14&&<div style={{fontSize:11,marginBottom:6,padding:"3px 8px",borderRadius:4,display:"inline-block",background:days<=3?"rgba(239,68,68,0.15)":"rgba(201,168,76,0.12)",color:days<=3?"#ef4444":"#c9a84c",border:`1px solid ${days<=3?"#ef4444":"#c9a84c"}`,fontWeight:700}}>{days===0?"TODAY":days===1?"TOMORROW":`${days} days away`}</div>}
-    {pct<100&&<div><div className="progress-bar"><div className="progress-fill" style={{width:pct+"%"}}/></div><div style={{fontSize:10,color:"#4a6a7a",marginTop:3,textAlign:"right"}}>{pct}% prep complete</div></div>}
-    {total>0&&<div style={{fontSize:11,color:"#8a9bb0",marginTop:6}}>💰 Budget: <span style={{color:"#c9a84c",fontWeight:700}}>${total.toLocaleString()}</span></div>}
-    {show.hasSpeaking&&show.speakingTitle&&<div style={{marginTop:6,fontSize:11,color:"#8a9bb0",borderTop:"1px solid #1e3040",paddingTop:5}}>🎤 <em>"{show.speakingTitle}"</em>{show.speakingWho&&` · ${show.speakingWho}`}</div>}
+ 
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3200);return()=>clearTimeout(t);},[]);
+  return <div className="toast">{({success:"✅",error:"❌",warning:"⚠️",info:"ℹ️"})[type]||"ℹ️"} {msg} <span onClick={onDone} style={{marginLeft:8,cursor:"pointer",opacity:0.6}}>×</span></div>;
+}
+ 
+function DeptBadges({department,size="sm"}){
+  if(!department)return <span style={{fontSize:11,color:"#8A9BB8",fontStyle:"italic"}}>No dept</span>;
+  return <div style={{display:"flex",flexWrap:"wrap",gap:4}}>{normalizeDept(department).split(",").map(d=>{
+    const t=d.trim(),c=DEPT_COLORS[t]||DEPT_COLORS.default;
+    return <span key={t} style={{fontSize:size==="xs"?9:10,fontWeight:700,padding:size==="xs"?"2px 6px":"2px 9px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`,textTransform:"uppercase",letterSpacing:0.5,whiteSpace:"nowrap"}}>{t}</span>;
+  })}</div>;
+}
+ 
+function DeptFilter({value,onChange}){
+  const base={padding:"5px 14px",borderRadius:20,fontSize:12,cursor:"pointer",background:"transparent",color:"#4A5F7A",border:"1.5px solid #D6DCE8",fontWeight:600};
+  const on={...base,background:"#002856",color:"#FFD100",border:"1.5px solid #002856",fontWeight:700};
+  return <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+    <span style={{fontSize:11,color:"#8A9BB8",textTransform:"uppercase",letterSpacing:1,fontWeight:600}}>Filter</span>
+    {["All",...CANONICAL_DEPTS].map(d=><button key={d} className="filter-pill" onClick={()=>onChange(d)} style={value===d?on:base}>{d}</button>)}
   </div>;
 }
-
-// ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
+ 
+function ShowCard({show,onEdit}){
+  const c=getDeptColor(show.department),pct=completionPct(show),total=budgetTotal(show),days=daysUntil(show.start),openRem=(show.reminders||[]).filter(r=>!r.done).length;
+  return <div className="show-card" onClick={()=>onEdit(show)} style={{borderLeft:`4px solid ${c.border}`,padding:"14px 16px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
+      <h3 style={{fontSize:15,fontWeight:700,color:"#002856",lineHeight:1.3,margin:0}}>{show.name}</h3>
+      <div style={{display:"flex",gap:4,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+        {show.hasSponsor&&<span style={{fontSize:11,background:"#FFF8E1",border:"1px solid #FFD100",color:"#7A5C00",borderRadius:4,padding:"1px 5px"}}>🏆</span>}
+        {show.hasSpeaking&&<span style={{fontSize:11,background:"#E3EEF9",border:"1px solid #2979C8",color:"#0B3A6E",borderRadius:4,padding:"1px 5px"}}>🎤</span>}
+        {show.booth?.number&&show.booth.number!=="TBD"&&<span style={{fontSize:10,background:"#EFE9F9",border:"1px solid #7B4FBE",color:"#3B1F70",borderRadius:4,padding:"1px 5px"}}>#{show.booth.number}</span>}
+        {openRem>0&&<span style={{fontSize:10,background:"#FEE2E2",border:"1px solid #D0021B",color:"#D0021B",borderRadius:4,padding:"1px 5px"}}>⏰{openRem}</span>}
+      </div>
+    </div>
+    <div style={{fontSize:12,color:"#002856",fontWeight:700,marginBottom:3}}>{fmtRange(show.start,show.end)}</div>
+    {show.city&&<div style={{fontSize:12,color:"#4A5F7A",marginBottom:2}}>📍 {show.city}</div>}
+    {show.venue&&<div style={{fontSize:11,color:"#8A9BB8",marginBottom:4}}>🏛 {show.venue}</div>}
+    <div style={{marginTop:6,marginBottom:8}}><DeptBadges department={show.department}/></div>
+    {days!==null&&days>=0&&days<=14&&<div style={{fontSize:11,marginBottom:6,padding:"3px 10px",borderRadius:4,display:"inline-block",background:days<=3?"#FEE2E2":"#FFF8E1",color:days<=3?"#D0021B":"#7A5C00",border:`1px solid ${days<=3?"#D0021B":"#FFD100"}`,fontWeight:700}}>{days===0?"TODAY":days===1?"TOMORROW":`${days} days away`}</div>}
+    {pct<100&&<div><div className="progress-bar"><div className="progress-fill" style={{width:pct+"%"}}/></div><div style={{fontSize:10,color:"#8A9BB8",marginTop:3,textAlign:"right"}}>{pct}% prep complete</div></div>}
+    {total>0&&<div style={{fontSize:11,color:"#4A5F7A",marginTop:6}}>💰 Budget: <span style={{color:"#002856",fontWeight:700}}>${total.toLocaleString()}</span></div>}
+  </div>;
+}
+ 
 function CalendarView({shows,onEdit}){
   const today=new Date();
   const [year,setYear]=useState(today.getFullYear());
@@ -305,133 +235,106 @@ function CalendarView({shows,onEdit}){
   const [dFilter,setDFilter]=useState("All");
   const prev=()=>{if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1);};
   const next=()=>{if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1);};
-  const goToday=()=>{setYear(today.getFullYear());setMonth(today.getMonth());};
-  const firstDay=new Date(year,month,1).getDay();
-  const daysInMonth=new Date(year,month+1,0).getDate();
   const filtShows=shows.filter(s=>showMatchesDept(s,dFilter));
+  const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate();
   function showsOnDay(day){
     const ds=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     return filtShows.filter(s=>s.start<=ds&&s.end>=ds);
   }
-  const monthName=new Date(year,month,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});
-  const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const btn={background:"#1a2d3d",border:"1px solid #2d3f52",color:"#c9a84c",width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:18,lineHeight:"1"};
+  const nb={background:"#002856",border:"none",color:"#FFD100",width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:18,lineHeight:"1",fontWeight:700};
   return <div>
     <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginBottom:16}}>
-      <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <button onClick={prev} style={btn}>‹</button>
-        <h2 style={{fontSize:20,fontWeight:700,color:"#c9a84c",letterSpacing:2,minWidth:220,textAlign:"center"}}>{monthName.toUpperCase()}</h2>
-        <button onClick={next} style={btn}>›</button>
-        <button onClick={goToday} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",marginLeft:4}}>Today</button>
-      </div>
+      <button onClick={prev} style={nb}>‹</button>
+      <h2 style={{fontSize:22,fontWeight:800,color:"#002856",letterSpacing:1,minWidth:240,textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif"}}>{new Date(year,month,1).toLocaleDateString("en-US",{month:"long",year:"numeric"}).toUpperCase()}</h2>
+      <button onClick={next} style={nb}>›</button>
+      <button onClick={()=>{setYear(today.getFullYear());setMonth(today.getMonth());}} style={{background:"transparent",border:"1.5px solid #D6DCE8",color:"#4A5F7A",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>Today</button>
     </div>
     <div style={{marginBottom:16}}><DeptFilter value={dFilter} onChange={setDFilter}/></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>
-      {DAYS.map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,padding:"4px 0"}}>{d}</div>)}
+      {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:"#8A9BB8",textTransform:"uppercase",letterSpacing:1,padding:"4px 0",fontWeight:700}}>{d}</div>)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-      {Array(firstDay).fill(null).map((_,i)=><div key={"x"+i} style={{minHeight:100,background:"#0a131c",borderRadius:4,border:"1px solid #111e2b"}}/>)}
+      {Array(firstDay).fill(null).map((_,i)=><div key={"x"+i} style={{minHeight:100,background:"#F4F6F9",borderRadius:4,border:"1px solid #EEF1F6"}}/>)}
       {Array(daysInMonth).fill(null).map((_,i)=>{
-        const day=i+1;
-        const isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
-        const dayShows=showsOnDay(day);
-        const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-        return <div key={day} className="cal-cell" style={{background:isToday?"#1c2f40":"#111e2b",border:isToday?"1.5px solid #c9a84c":"1px solid #1a2d3d"}}>
-          <div style={{fontSize:11,color:isToday?"#c9a84c":"#3a4f62",fontWeight:isToday?700:400,textAlign:"right",marginBottom:3}}>{day}</div>
-          {dayShows.slice(0,4).map(s=>{
-            const c=getDeptColor(s.department);
-            const isStart=s.start===dateStr;
-            const openRem=(s.reminders||[]).filter(r=>!r.done&&daysUntil(r.date)<=0).length;
-            return <div key={s.id} className="cal-event" onClick={e=>{e.stopPropagation();onEdit(s);}}
-              title={`${s.name} · ${fmtRange(s.start,s.end)}${s.city?" · "+s.city:""}`}
-              style={{background:c.cal+"28",borderLeft:`2px solid ${c.cal}`,color:c.cal,fontWeight:isStart?700:400,opacity:isStart?1:0.55,position:"relative"}}>
-              {isStart?<>{openRem>0&&<span style={{fontSize:8,background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"0 3px",marginRight:2}}>!</span>}{s.name}</>:"·"}
-            </div>;
+        const day=i+1,isToday=today.getFullYear()===year&&today.getMonth()===month&&today.getDate()===day;
+        const dayShows=showsOnDay(day),dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        return <div key={day} className="cal-cell" style={{background:isToday?"#FFF8E1":"#fff",border:isToday?"2px solid #FFD100":"1px solid #EEF1F6"}}>
+          <div style={{fontSize:11,color:isToday?"#002856":"#8A9BB8",fontWeight:isToday?800:400,textAlign:"right",marginBottom:3}}>{day}</div>
+          {dayShows.slice(0,4).map(s=>{const c=getDeptColor(s.department),isStart=s.start===dateStr;
+            return <div key={s.id} className="cal-event" onClick={e=>{e.stopPropagation();onEdit(s);}} title={`${s.name} · ${fmtRange(s.start,s.end)}`}
+              style={{background:isStart?c.cal+"22":"transparent",borderLeft:`2px solid ${c.cal}`,color:isStart?c.text:"#8A9BB8",opacity:isStart?1:0.55}}>{isStart?s.name:"·"}</div>;
           })}
-          {dayShows.length>4&&<div style={{fontSize:9,color:"#8a9bb0",paddingLeft:3}}>+{dayShows.length-4} more</div>}
+          {dayShows.length>4&&<div style={{fontSize:9,color:"#8A9BB8",paddingLeft:3}}>+{dayShows.length-4} more</div>}
         </div>;
       })}
     </div>
     <div style={{marginTop:16,display:"flex",flexWrap:"wrap",gap:6}}>
-      {CANONICAL_DEPTS.map(k=>{const c=DEPT_COLORS[k]||DEPT_COLORS.default;return <span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`}}>{k}</span>;})}
+      {CANONICAL_DEPTS.map(k=>{const c=DEPT_COLORS[k]||DEPT_COLORS.default;return <span key={k} style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:20,background:c.bg,color:c.text,border:`1px solid ${c.border}`}}>{k}</span>;})}
     </div>
   </div>;
 }
-
-// ─── CARDS VIEW ───────────────────────────────────────────────────────────────
+ 
 function CardView({shows,onEdit}){
   const [dFilter,setDFilter]=useState("All");
   const [search,setSearch]=useState("");
   const filtered=shows.filter(s=>{
-    if(!showMatchesDept(s,dFilter)) return false;
-    if(!search) return true;
+    if(!showMatchesDept(s,dFilter))return false;
+    if(!search)return true;
     const q=search.toLowerCase();
-    return [s.name,s.city,s.attendees,s.notes,s.website,s.booth?.number,s.venue,s.hotel?.name].some(v=>v&&String(v).toLowerCase().includes(q));
+    return [s.name,s.city,s.attendees,s.notes,s.venue,s.hotel?.name].some(v=>v&&String(v).toLowerCase().includes(q));
   });
   const byMonth={};
-  filtered.forEach(s=>{
-    const m=new Date(s.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"});
-    if(!byMonth[m])byMonth[m]=[];
-    byMonth[m].push(s);
-  });
+  filtered.forEach(s=>{const m=new Date(s.start+"T12:00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"});if(!byMonth[m])byMonth[m]=[];byMonth[m].push(s);});
   return <div>
     <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20,alignItems:"center"}}>
       <DeptFilter value={dFilter} onChange={setDFilter}/>
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search shows, venues, attendees…"
-        style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:6,padding:"7px 14px",color:"#e8dcc8",fontSize:13,outline:"none",fontFamily:"inherit",width:280}}/>
-      {search&&<button onClick={()=>setSearch("")} style={{background:"transparent",border:"none",color:"#8a9bb0",cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>✕ Clear</button>}
+        style={{background:"#fff",border:"1.5px solid #D6DCE8",borderRadius:6,padding:"7px 14px",color:"#002856",fontSize:13,outline:"none",width:280}}/>
+      {search&&<button onClick={()=>setSearch("")} style={{background:"transparent",border:"none",color:"#8A9BB8",cursor:"pointer",fontSize:13}}>✕ Clear</button>}
     </div>
     {Object.entries(byMonth).map(([month,items])=>(
       <div key={month} style={{marginBottom:40}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <h2 style={{fontSize:19,fontWeight:700,color:"#c9a84c",textTransform:"uppercase",letterSpacing:3,whiteSpace:"nowrap"}}>{month}</h2>
-          <div style={{flex:1,height:1,background:"linear-gradient(to right,#c9a84c44,transparent)"}}/>
-          <span style={{fontSize:12,color:"#8a9bb0"}}>{items.length} show{items.length!==1?"s":""}</span>
+          <h2 style={{fontSize:22,fontWeight:800,color:"#002856",textTransform:"uppercase",letterSpacing:2,whiteSpace:"nowrap",fontFamily:"'Barlow Condensed',sans-serif"}}>{month}</h2>
+          <div style={{flex:1,height:2,background:"linear-gradient(to right,#FFD100,transparent)"}}/>
+          <span style={{fontSize:12,color:"#8A9BB8",fontWeight:600}}>{items.length} show{items.length!==1?"s":""}</span>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:12}}>
           {items.map(s=><ShowCard key={s.id} show={s} onEdit={onEdit}/>)}
         </div>
       </div>
     ))}
-    {Object.keys(byMonth).length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No shows match this filter.</div>}
+    {Object.keys(byMonth).length===0&&<div style={{textAlign:"center",color:"#8A9BB8",padding:60}}>No shows match this filter.</div>}
   </div>;
 }
-
-// ─── ATTENDEES VIEW ───────────────────────────────────────────────────────────
+ 
 function AttendeesView({shows,onEdit}){
   const [search,setSearch]=useState("");
   const [dFilter,setDFilter]=useState("All");
   const filtShows=shows.filter(s=>showMatchesDept(s,dFilter));
   const personMap={};
-  filtShows.forEach(show=>{
-    if(!show.attendees) return;
-    show.attendees.split(",").forEach(raw=>{
-      const name=raw.trim();if(!name)return;
-      if(!personMap[name])personMap[name]=[];
-      personMap[name].push(show);
-    });
-  });
+  filtShows.forEach(show=>{if(!show.attendees)return;show.attendees.split(",").forEach(raw=>{const name=raw.trim();if(!name)return;if(!personMap[name])personMap[name]=[];personMap[name].push(show);});});
   const sorted=Object.entries(personMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const filtered=search?sorted.filter(([n])=>n.toLowerCase().includes(search.toLowerCase())):sorted;
   return <div>
     <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20,alignItems:"center"}}>
       <DeptFilter value={dFilter} onChange={setDFilter}/>
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name…"
-        style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:6,padding:"7px 14px",color:"#e8dcc8",fontSize:13,outline:"none",fontFamily:"inherit",width:200}}/>
+        style={{background:"#fff",border:"1.5px solid #D6DCE8",borderRadius:6,padding:"7px 14px",color:"#002856",fontSize:13,outline:"none",width:200}}/>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12}}>
       {filtered.map(([name,personShows])=>(
-        <div key={name} style={{background:"#1a2d3d",border:"1px solid #2d3f52",borderRadius:8,padding:"14px 16px"}}>
+        <div key={name} style={{background:"#fff",border:"1px solid #D6DCE8",borderRadius:8,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,40,86,0.10)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-            <h3 style={{fontSize:14,fontWeight:700,color:"#c9a84c"}}>{name}</h3>
-            <span style={{fontSize:11,color:"#8a9bb0",background:"#0f1923",padding:"2px 8px",borderRadius:20,border:"1px solid #2d3f52",whiteSpace:"nowrap"}}>{personShows.length} show{personShows.length!==1?"s":""}</span>
+            <h3 style={{fontSize:14,fontWeight:700,color:"#002856"}}>{name}</h3>
+            <span style={{fontSize:11,color:"#4A5F7A",background:"#EEF1F6",padding:"2px 9px",borderRadius:20,border:"1px solid #D6DCE8",whiteSpace:"nowrap",fontWeight:600}}>{personShows.length} show{personShows.length!==1?"s":""}</span>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
             {personShows.sort((a,b)=>a.start.localeCompare(b.start)).map(s=>(
-              <div key={s.id} onClick={()=>onEdit(s)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 9px",background:"#0f1923",borderRadius:6,cursor:"pointer",border:"1px solid #1e3040"}}>
+              <div key={s.id} onClick={()=>onEdit(s)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 9px",background:"#F4F6F9",borderRadius:6,cursor:"pointer",border:"1px solid #EEF1F6"}}>
                 <div style={{minWidth:0,flex:1}}>
-                  <div style={{fontSize:12,color:"#e8dcc8",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
-                  <div style={{fontSize:11,color:"#8a9bb0"}}>{fmtRange(s.start,s.end)}{s.city?` · ${s.city}`:""}</div>
+                  <div style={{fontSize:12,color:"#002856",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
+                  <div style={{fontSize:11,color:"#8A9BB8"}}>{fmtRange(s.start,s.end)}{s.city?` · ${s.city}`:""}</div>
                 </div>
                 <div style={{marginLeft:8,flexShrink:0}}><DeptBadges department={s.department} size="xs"/></div>
               </div>
@@ -440,461 +343,302 @@ function AttendeesView({shows,onEdit}){
         </div>
       ))}
     </div>
-    {filtered.length===0&&<div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>No attendees found.</div>}
+    {filtered.length===0&&<div style={{textAlign:"center",color:"#8A9BB8",padding:60}}>No attendees found.</div>}
   </div>;
 }
-
-// ─── ALERTS VIEW ──────────────────────────────────────────────────────────────
+ 
 function AlertsView({shows,onEdit}){
   const alerts=generateAlerts(shows);
-  if(!alerts.length) return <div style={{textAlign:"center",color:"#8a9bb0",padding:60}}>
+  if(!alerts.length)return <div style={{textAlign:"center",color:"#8A9BB8",padding:60}}>
     <div style={{fontSize:40,marginBottom:12}}>✅</div>
-    <div style={{fontSize:18,color:"#c9a84c",fontWeight:700,marginBottom:6}}>All clear</div>
-    <div style={{fontSize:13}}>No urgent alerts or overdue reminders</div>
+    <div style={{fontSize:20,color:"#002856",fontWeight:800,marginBottom:6,fontFamily:"'Barlow Condensed',sans-serif"}}>ALL CLEAR</div>
+    <div style={{fontSize:13}}>No urgent alerts or overdue reminders.</div>
   </div>;
-  const typeColor={urgent:"#ef4444",warning:"#f59e0b",info:"#3b82f6"};
+  const tC={urgent:"#D0021B",warning:"#F5A623",info:"#2979C8"};
+  const tB={urgent:"#FEE2E2",warning:"#FEF3C7",info:"#E3EEF9"};
   return <div style={{display:"flex",flexDirection:"column",gap:8}}>
-    {alerts.map((a,i)=>{
-      const show=shows.find(s=>s.id===a.showId);
-      return <div key={i} onClick={()=>show&&onEdit(show)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#1a2d3d",border:`1px solid ${typeColor[a.type]}33`,borderLeft:`3px solid ${typeColor[a.type]}`,borderRadius:8,cursor:show?"pointer":"default"}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:typeColor[a.type],flexShrink:0}}/>
-        <div style={{flex:1,fontSize:13}}>{a.text}</div>
-        {show&&<div style={{fontSize:11,color:"#8a9bb0",flexShrink:0}}>→ Open</div>}
+    {alerts.map((a,i)=>{const show=shows.find(s=>s.id===a.showId);
+      return <div key={i} onClick={()=>show&&onEdit(show)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:tB[a.type],border:`1px solid ${tC[a.type]}44`,borderLeft:`4px solid ${tC[a.type]}`,borderRadius:8,cursor:show?"pointer":"default"}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:tC[a.type],flexShrink:0}}/>
+        <div style={{flex:1,fontSize:13,color:"#002856",fontWeight:600}}>{a.text}</div>
+        {show&&<div style={{fontSize:11,color:"#4A5F7A",flexShrink:0,fontWeight:600}}>→ Open</div>}
       </div>;
     })}
   </div>;
 }
-
-// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+ 
 function EditModal({show,onSave,onClose,onDelete,toast}){
-  const blank={name:"",start:"",end:"",city:"",venue:"",department:"",attendees:"",notes:"",
-    website:"",boothNumber:"",hasSponsor:false,sponsorNotes:"",hasSpeaking:false,speakingTitle:"",speakingWho:"",speakingWhen:"",
-    status:"upcoming",
+  const blank={name:"",start:"",end:"",city:"",venue:"",department:"",attendees:"",notes:"",website:"",status:"upcoming",
     booth:{size:"",number:"TBD",setup:"",teardown:"",shipper:"Abstract",trackingNumber:"",notes:""},
     hotel:{name:"",address:"",confirmNumber:"",checkIn:"",checkOut:"",notes:""},
-    sponsorship:{level:"Exhibitor",amount:"",includes:"",notes:""},
+    sponsorship:{level:"Exhibitor",amount:"",includes:""},
     swag:"",extras:"",budget:{booth:0,travel:0,hotel:0,swag:0,other:0},
-    reminders:[],receipts:[],changeLog:[],businessLine:[],leadFormUrl:""
+    reminders:[],receipts:[],changeLog:[],businessLine:[],
+    hasSponsor:false,sponsorNotes:"",hasSpeaking:false,speakingTitle:"",speakingWho:"",speakingWhen:"",
   };
-  const [form,setForm]=useState(show?{...blank,...show,
-    booth:{...blank.booth,...(show.booth||{})},
-    hotel:{...blank.hotel,...(show.hotel||{})},
-    sponsorship:{...blank.sponsorship,...(show.sponsorship||{})},
-    budget:{...blank.budget,...(show.budget||{})},
-    reminders:show.reminders||[],receipts:show.receipts||[],changeLog:show.changeLog||[],
-    businessLine:show.businessLine||[],
-  }:blank);
+  const [form,setForm]=useState(show?{...blank,...show,booth:{...blank.booth,...(show.booth||{})},hotel:{...blank.hotel,...(show.hotel||{})},sponsorship:{...blank.sponsorship,...(show.sponsorship||{})},budget:{...blank.budget,...(show.budget||{})},reminders:show.reminders||[],receipts:show.receipts||[],changeLog:show.changeLog||[],businessLine:show.businessLine||[]}:blank);
   const [section,setSection]=useState("basic");
-  const isNew=!show;
-  const fileRef=useRef();
+  const isNew=!show,fileRef=useRef();
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
-  const setNested=(obj,k,v)=>setForm(f=>({...f,[obj]:{...f[obj],[k]:v}}));
-
-  const lbl={fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"block"};
-  const inp={width:"100%",background:"#0f1923",border:"1px solid #2d3f52",borderRadius:6,padding:"8px 12px",color:"#e8dcc8",fontSize:14,outline:"none"};
+  const setN=(obj,k,v)=>setForm(f=>({...f,[obj]:{...f[obj],[k]:v}}));
+  const lbl={fontSize:11,color:"#4A5F7A",textTransform:"uppercase",letterSpacing:0.8,marginBottom:4,display:"block",fontWeight:700};
+  const inp={width:"100%",background:"#F4F6F9",border:"1.5px solid #D6DCE8",borderRadius:6,padding:"8px 12px",color:"#002856",fontSize:14,outline:"none"};
   const DEPT_OPTIONS=["Charter","First Alt","First Services","First Serves","DBD","Ops"];
   const BL_OPTIONS=["Home-to-School","First Services","First Alt","First Student Charter","DBD","Ops"];
-
-  // Reminders
   const [newRem,setNewRem]=useState({text:"",date:""});
-  const addReminder=()=>{
-    if(!newRem.text||!newRem.date){toast("Enter reminder text and date","error");return;}
-    set("reminders",[...form.reminders,{id:uid(),text:newRem.text,date:newRem.date,done:false}]);
-    setNewRem({text:"",date:""});
-  };
-  const toggleRem=(idx)=>{
-    const r=[...form.reminders];r[idx]={...r[idx],done:!r[idx].done};set("reminders",r);
-  };
-  const deleteRem=(idx)=>set("reminders",form.reminders.filter((_,i)=>i!==idx));
-
-  // Receipts
-  const handleReceiptFile=(files)=>{
-    Array.from(files).forEach(file=>{
-      if(file.size>5*1024*1024){toast("File too large (max 5MB)","error");return;}
-      const reader=new FileReader();
-      reader.onload=e=>set("receipts",[...form.receipts,{id:uid(),name:file.name,type:file.type,size:(file.size/1024).toFixed(1)+" KB",data:e.target.result,addedAt:Date.now()}]);
-      reader.readAsDataURL(file);
-    });
-  };
-  const downloadReceipt=(r)=>{const a=document.createElement("a");a.href=r.data;a.download=r.name;a.click();};
-  const deleteReceipt=(id)=>set("receipts",form.receipts.filter(r=>r.id!==id));
-
-  // Leads handled by Formspree
-
-  const SECTIONS=[
-    {id:"basic",label:"📋 Basic"},
-    {id:"booth",label:"🏗 Booth"},
-    {id:"hotel",label:"🏨 Hotel"},
-    {id:"sponsor",label:"⭐ Sponsor"},
-    {id:"speaking",label:"🎤 Speaking"},
-    {id:"budget",label:"💰 Budget"},
-    {id:"reminders",label:"⏰ Reminders"},
-    {id:"receipts",label:"🧾 Receipts"},
-    {id:"changelog",label:"🕐 Log"},
-  ];
-
-  const sTab=(id,label,hasDot)=>{
-    const active=section===id;
-    return <button key={id} onClick={()=>setSection(id)} style={{padding:"6px 11px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:"inherit",
-      background:active?"#c9a84c22":"transparent",color:active?"#c9a84c":"#8a9bb0",
-      border:`1px solid ${active?"#c9a84c":"#2d3f52"}`,fontWeight:active?700:400,whiteSpace:"nowrap",
-      display:"flex",alignItems:"center",gap:4}}>
-      {label}{hasDot&&!active&&<span style={{width:5,height:5,borderRadius:"50%",background:"#22c55e",display:"inline-block",flexShrink:0}}/>}
-    </button>;
-  };
-
+  const addRem=()=>{if(!newRem.text||!newRem.date){toast("Enter text and date","error");return;}set("reminders",[...form.reminders,{id:uid(),text:newRem.text,date:newRem.date,done:false}]);setNewRem({text:"",date:""}); };
+  const togRem=i=>{const r=[...form.reminders];r[i]={...r[i],done:!r[i].done};set("reminders",r);};
+  const delRem=i=>set("reminders",form.reminders.filter((_,x)=>x!==i));
+  const handleFiles=files=>{Array.from(files).forEach(file=>{if(file.size>5*1024*1024){toast("File too large","error");return;}const r=new FileReader();r.onload=e=>set("receipts",[...form.receipts,{id:uid(),name:file.name,type:file.type,size:(file.size/1024).toFixed(1)+" KB",data:e.target.result,addedAt:Date.now()}]);r.readAsDataURL(file);});};
+ 
+  const SECS=[{id:"basic",label:"📋 Basic"},{id:"booth",label:"🏗 Booth"},{id:"hotel",label:"🏨 Hotel"},{id:"sponsor",label:"⭐ Sponsor"},{id:"speaking",label:"🎤 Speaking"},{id:"budget",label:"💰 Budget"},{id:"reminders",label:"⏰ Reminders"},{id:"receipts",label:"🧾 Receipts"},{id:"changelog",label:"🕐 Log"}];
+ 
   return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
-    <div className="modal" style={{maxWidth:720}}>
-      {/* Header */}
-      <div style={{padding:"16px 22px",borderBottom:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <h2 style={{color:"#c9a84c",fontSize:17}}>{isNew?"Add New Show":"Edit — "+form.name}</h2>
-        <button onClick={onClose} style={{background:"none",border:"none",color:"#8a9bb0",fontSize:24,cursor:"pointer",lineHeight:1}}>×</button>
+    <div className="modal">
+      <div style={{padding:"16px 22px",borderBottom:"2px solid #FFD100",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#002856",borderRadius:"12px 12px 0 0"}}>
+        <h2 style={{color:"#FFD100",fontSize:17,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,letterSpacing:1}}>{isNew?"ADD NEW SHOW":"EDIT — "+form.name.toUpperCase()}</h2>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#FFD100",fontSize:24,cursor:"pointer",lineHeight:1}}>×</button>
       </div>
-
-      {/* Section tabs */}
-      <div style={{padding:"10px 16px",borderBottom:"1px solid #1a2d3d",display:"flex",gap:5,flexWrap:"wrap",background:"#0f1923"}}>
-        {SECTIONS.map(s=>sTab(s.id,s.label,
-          s.id==="booth"?!!(form.booth?.number&&form.booth.number!=="TBD"):
-          s.id==="hotel"?!!form.hotel?.confirmNumber:
-          s.id==="sponsor"?!!form.hasSponsor:
-          s.id==="speaking"?!!form.hasSpeaking:
-          s.id==="reminders"?form.reminders.some(r=>!r.done):
-          s.id==="receipts"?form.receipts.length>0:false
-        ))}
+      <div style={{padding:"10px 16px",borderBottom:"1px solid #EEF1F6",display:"flex",gap:5,flexWrap:"wrap",background:"#F4F6F9"}}>
+        {SECS.map(s=>{const a=section===s.id;return <button key={s.id} onClick={()=>setSection(s.id)} style={{padding:"6px 11px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:a?700:600,whiteSpace:"nowrap",background:a?"#002856":"transparent",color:a?"#FFD100":"#4A5F7A",border:`1px solid ${a?"#002856":"#D6DCE8"}`}}>{s.label}</button>;})}
       </div>
-
       <div style={{padding:"18px 22px",minHeight:320}}>
-
-        {/* ── BASIC ── */}
         {section==="basic"&&<div style={{display:"grid",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Show Name *</label>
-              <input value={form.name||""} onChange={e=>set("name",e.target.value)} style={inp}/>
-            </div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Show Name *</label><input value={form.name||""} onChange={e=>set("name",e.target.value)} style={inp}/></div>
             <div><label style={lbl}>Start Date</label><input type="date" value={form.start||""} onChange={e=>set("start",e.target.value)} style={inp}/></div>
             <div><label style={lbl}>End Date</label><input type="date" value={form.end||""} onChange={e=>set("end",e.target.value)} style={inp}/></div>
             <div><label style={lbl}>City</label><input value={form.city||""} onChange={e=>set("city",e.target.value)} style={inp}/></div>
-            <div><label style={lbl}>Venue</label><input value={form.venue||""} onChange={e=>set("venue",e.target.value)} placeholder="Convention center, hotel, etc." style={inp}/></div>
-            <div><label style={lbl}>Website</label><input value={form.website||""} onChange={e=>set("website",e.target.value)} placeholder="https://…" style={inp}/>
-              {form.website&&<a href={form.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#3b82f6",marginTop:4,display:"inline-block"}}>↗ Open</a>}
-            </div>
-            <div><label style={lbl}>Status</label>
-              <select value={form.status||"upcoming"} onChange={e=>set("status",e.target.value)} style={{...inp,cursor:"pointer"}}>
-                <option value="upcoming">Upcoming</option><option value="active">Active / Live</option><option value="complete">Complete</option>
-              </select>
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Department(s)</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:4}}>
-                {DEPT_OPTIONS.map(d=>{
-                  const active=normalizeDept(form.department||"").split(",").map(x=>x.trim()).includes(d);
-                  const c=DEPT_COLORS[d]||DEPT_COLORS.default;
-                  return <button key={d} onClick={()=>{
-                    const cur=normalizeDept(form.department||"").split(",").map(x=>x.trim()).filter(x=>x);
-                    const next=active?cur.filter(x=>x!==d):[...cur,d];
-                    set("department",next.join(", "));
-                  }} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,
-                    background:active?c.bg:"transparent",color:active?c.text:"#8a9bb0",border:`1.5px solid ${active?c.border:"#2d3f52"}`}}>{d}</button>;
-                })}
-              </div>
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Business Line(s)</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {BL_OPTIONS.map(b=>{
-                  const active=(form.businessLine||[]).includes(b);
-                  return <button key={b} onClick={()=>{
-                    const cur=form.businessLine||[];
-                    set("businessLine",active?cur.filter(x=>x!==b):[...cur,b]);
-                  }} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:"inherit",
-                    background:active?"rgba(201,168,76,0.2)":"transparent",color:active?"#c9a84c":"#8a9bb0",
-                    border:`1.5px solid ${active?"#c9a84c":"#2d3f52"}`,fontWeight:active?700:400}}>{b}</button>;
-                })}
-              </div>
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Attendees <span style={{textTransform:"none",letterSpacing:0}}>(comma-separated)</span></label>
-              <textarea rows={2} value={form.attendees||""} onChange={e=>set("attendees",e.target.value)} style={{...inp,resize:"vertical"}}/>
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Extras / Special Events</label>
-              <input value={form.extras||""} onChange={e=>set("extras",e.target.value)} placeholder="Pre-show dinner, speaking slot, demo, networking event…" style={inp}/>
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={lbl}>Notes / Internal Comments</label>
-              <textarea rows={3} value={form.notes||""} onChange={e=>set("notes",e.target.value)} style={{...inp,resize:"vertical"}}/>
-            </div>
+            <div><label style={lbl}>Venue</label><input value={form.venue||""} onChange={e=>set("venue",e.target.value)} placeholder="Convention center, hotel…" style={inp}/></div>
+            <div><label style={lbl}>Website</label><input value={form.website||""} onChange={e=>set("website",e.target.value)} placeholder="https://…" style={inp}/>{form.website&&<a href={form.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#2979C8",marginTop:4,display:"inline-block"}}>↗ Open</a>}</div>
+            <div><label style={lbl}>Status</label><select value={form.status||"upcoming"} onChange={e=>set("status",e.target.value)} style={{...inp,cursor:"pointer"}}><option value="upcoming">Upcoming</option><option value="active">Active / Live</option><option value="complete">Complete</option></select></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Department(s)</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {DEPT_OPTIONS.map(d=>{const active=normalizeDept(form.department||"").split(",").map(x=>x.trim()).includes(d),c=DEPT_COLORS[d]||DEPT_COLORS.default;
+                return <button key={d} onClick={()=>{const cur=normalizeDept(form.department||"").split(",").map(x=>x.trim()).filter(x=>x);set("department",(active?cur.filter(x=>x!==d):[...cur,d]).join(", "));}} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontWeight:active?700:600,background:active?c.bg:"transparent",color:active?c.text:"#4A5F7A",border:`1.5px solid ${active?c.border:"#D6DCE8"}`}}>{d}</button>;})}
+            </div></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Business Line(s)</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {BL_OPTIONS.map(b=>{const active=(form.businessLine||[]).includes(b);return <button key={b} onClick={()=>{const cur=form.businessLine||[];set("businessLine",active?cur.filter(x=>x!==b):[...cur,b]);}} style={{padding:"4px 12px",borderRadius:20,fontSize:12,cursor:"pointer",background:active?"#002856":"transparent",color:active?"#FFD100":"#4A5F7A",border:`1.5px solid ${active?"#002856":"#D6DCE8"}`,fontWeight:active?700:600}}>{b}</button>;})}
+            </div></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Attendees <span style={{textTransform:"none",letterSpacing:0,fontWeight:400}}>(comma-separated)</span></label><textarea rows={2} value={form.attendees||""} onChange={e=>set("attendees",e.target.value)} style={{...inp,resize:"vertical"}}/></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Extras / Special Events</label><input value={form.extras||""} onChange={e=>set("extras",e.target.value)} placeholder="Pre-show dinner, speaking slot, networking…" style={inp}/></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Notes</label><textarea rows={3} value={form.notes||""} onChange={e=>set("notes",e.target.value)} style={{...inp,resize:"vertical"}}/></div>
           </div>
         </div>}
-
-        {/* ── BOOTH ── */}
         {section==="booth"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-          <div><label style={lbl}>Booth Size</label><input value={form.booth?.size||""} onChange={e=>setNested("booth","size",e.target.value)} placeholder="10x10, 10x20…" style={inp}/></div>
-          <div><label style={lbl}>Booth Number</label><input value={form.booth?.number||""} onChange={e=>setNested("booth","number",e.target.value)} placeholder="TBD" style={inp}/></div>
-          <div><label style={lbl}>Setup Date</label><input type="date" value={form.booth?.setup||""} onChange={e=>setNested("booth","setup",e.target.value)} style={inp}/></div>
-          <div><label style={lbl}>Teardown Date</label><input type="date" value={form.booth?.teardown||""} onChange={e=>setNested("booth","teardown",e.target.value)} style={inp}/></div>
-          <div><label style={lbl}>Shipper / Logistics</label><input value={form.booth?.shipper||""} onChange={e=>setNested("booth","shipper",e.target.value)} placeholder="Abstract, FedEx…" style={inp}/></div>
-          <div><label style={lbl}>Tracking Number</label><input value={form.booth?.trackingNumber||""} onChange={e=>setNested("booth","trackingNumber",e.target.value)} style={inp}/></div>
-          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Swag & Materials</label>
-            <textarea rows={2} value={form.swag||""} onChange={e=>set("swag",e.target.value)} placeholder="Brochures, branded items, one-pagers, USB drives…" style={{...inp,resize:"vertical"}}/>
-          </div>
-          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Booth Notes</label>
-            <textarea rows={2} value={form.booth?.notes||""} onChange={e=>setNested("booth","notes",e.target.value)} placeholder="Corner booth, A/V needs, special instructions…" style={{...inp,resize:"vertical"}}/>
-          </div>
+          <div><label style={lbl}>Booth Size</label><input value={form.booth?.size||""} onChange={e=>setN("booth","size",e.target.value)} placeholder="10x10, 10x20…" style={inp}/></div>
+          <div><label style={lbl}>Booth Number</label><input value={form.booth?.number||""} onChange={e=>setN("booth","number",e.target.value)} placeholder="TBD" style={inp}/></div>
+          <div><label style={lbl}>Setup Date</label><input type="date" value={form.booth?.setup||""} onChange={e=>setN("booth","setup",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Teardown Date</label><input type="date" value={form.booth?.teardown||""} onChange={e=>setN("booth","teardown",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Shipper</label><input value={form.booth?.shipper||""} onChange={e=>setN("booth","shipper",e.target.value)} placeholder="Abstract, FedEx…" style={inp}/></div>
+          <div><label style={lbl}>Tracking Number</label><input value={form.booth?.trackingNumber||""} onChange={e=>setN("booth","trackingNumber",e.target.value)} style={inp}/></div>
+          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Swag & Materials</label><textarea rows={2} value={form.swag||""} onChange={e=>set("swag",e.target.value)} placeholder="Brochures, branded items, one-pagers…" style={{...inp,resize:"vertical"}}/></div>
+          <div style={{gridColumn:"1/-1"}}><label style={lbl}>Booth Notes</label><textarea rows={2} value={form.booth?.notes||""} onChange={e=>setN("booth","notes",e.target.value)} placeholder="Corner booth, A/V needs…" style={{...inp,resize:"vertical"}}/></div>
         </div>}
-
-        {/* ── HOTEL ── */}
         {section==="hotel"&&<div style={{display:"grid",gap:14}}>
-          <div><label style={lbl}>Hotel Name</label><input value={form.hotel?.name||""} onChange={e=>setNested("hotel","name",e.target.value)} placeholder="e.g. Omni William Penn Hotel" style={inp}/></div>
-          <div><label style={lbl}>Hotel Website</label><input value={form.hotel?.website||""} onChange={e=>setNested("hotel","website",e.target.value)} placeholder="https://…" style={inp}/>
-            {form.hotel?.website&&<a href={form.hotel.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#3b82f6",marginTop:4,display:"inline-block"}}>↗ Open</a>}
-          </div>
-          <div><label style={lbl}>Notes</label>
-            <textarea rows={4} value={form.hotel?.notes||""} onChange={e=>setNested("hotel","notes",e.target.value)} placeholder="Room block rate, booking deadline, check-in info, parking, shuttle…" style={{...inp,resize:"vertical"}}/>
-          </div>
+          <div><label style={lbl}>Hotel Name</label><input value={form.hotel?.name||""} onChange={e=>setN("hotel","name",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Hotel Website</label><input value={form.hotel?.website||""} onChange={e=>setN("hotel","website",e.target.value)} placeholder="https://…" style={inp}/>{form.hotel?.website&&<a href={form.hotel.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#2979C8",marginTop:4,display:"inline-block"}}>↗ Open</a>}</div>
+          <div><label style={lbl}>Notes</label><textarea rows={4} value={form.hotel?.notes||""} onChange={e=>setN("hotel","notes",e.target.value)} placeholder="Room block rate, booking deadline, parking, shuttle…" style={{...inp,resize:"vertical"}}/></div>
         </div>}
-
-        {/* ── SPONSOR ── */}
         {section==="sponsor"&&<div style={{display:"grid",gap:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#0f1923",borderRadius:8,border:`1px solid ${form.hasSponsor?"#f59e0b":"#2d3f52"}`}}>
-            <button onClick={()=>set("hasSponsor",!form.hasSponsor)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSponsor?"#f59e0b":"#2d3f52",flexShrink:0}}>
-              <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:form.hasSponsor?23:3,transition:"left 0.2s"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#F4F6F9",borderRadius:8,border:`1px solid ${form.hasSponsor?"#FFD100":"#D6DCE8"}`}}>
+            <button onClick={()=>set("hasSponsor",!form.hasSponsor)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSponsor?"#FFD100":"#D6DCE8",flexShrink:0}}>
+              <div style={{width:18,height:18,borderRadius:"50%",background:form.hasSponsor?"#002856":"white",position:"absolute",top:3,left:form.hasSponsor?23:3,transition:"left 0.2s"}}/>
             </button>
-            <div><div style={{fontSize:14,color:"#e8dcc8",fontWeight:600}}>We have a sponsorship</div></div>
+            <div style={{fontSize:14,color:"#002856",fontWeight:700}}>We have a sponsorship</div>
           </div>
           {form.hasSponsor&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            <div><label style={lbl}>Sponsorship Level</label>
-              <select value={form.sponsorship?.level||"Exhibitor"} onChange={e=>setNested("sponsorship","level",e.target.value)} style={{...inp,cursor:"pointer"}}>
-                {["Exhibitor","Bronze","Silver","Gold","Platinum","Title","Custom"].map(l=><option key={l}>{l}</option>)}
-              </select>
-            </div>
-            <div><label style={lbl}>Amount ($)</label><input type="number" value={form.sponsorship?.amount||""} onChange={e=>setNested("sponsorship","amount",e.target.value)} style={inp}/></div>
-            <div style={{gridColumn:"1/-1"}}><label style={lbl}>What's Included</label>
-              <textarea rows={2} value={form.sponsorship?.includes||""} onChange={e=>setNested("sponsorship","includes",e.target.value)} placeholder="Logo placement, session naming, speaking slot…" style={{...inp,resize:"vertical"}}/>
-            </div>
-            <div style={{gridColumn:"1/-1"}}><label style={lbl}>Sponsorship Notes (legacy field)</label>
-              <textarea rows={2} value={form.sponsorNotes||""} onChange={e=>set("sponsorNotes",e.target.value)} style={{...inp,resize:"vertical"}}/>
-            </div>
+            <div><label style={lbl}>Level</label><select value={form.sponsorship?.level||"Exhibitor"} onChange={e=>setN("sponsorship","level",e.target.value)} style={{...inp,cursor:"pointer"}}>{["Exhibitor","Bronze","Silver","Gold","Platinum","Title","Custom"].map(l=><option key={l}>{l}</option>)}</select></div>
+            <div><label style={lbl}>Amount ($)</label><input type="number" value={form.sponsorship?.amount||""} onChange={e=>setN("sponsorship","amount",e.target.value)} style={inp}/></div>
+            <div style={{gridColumn:"1/-1"}}><label style={lbl}>What's Included</label><textarea rows={2} value={form.sponsorship?.includes||""} onChange={e=>setN("sponsorship","includes",e.target.value)} placeholder="Logo placement, session naming…" style={{...inp,resize:"vertical"}}/></div>
           </div>}
-          {!form.hasSponsor&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No sponsorship for this show.</div>}
+          {!form.hasSponsor&&<div style={{textAlign:"center",color:"#8A9BB8",fontSize:13,padding:"20px 0"}}>No sponsorship for this show.</div>}
         </div>}
-
-        {/* ── SPEAKING ── */}
         {section==="speaking"&&<div style={{display:"grid",gap:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#0f1923",borderRadius:8,border:`1px solid ${form.hasSpeaking?"#3b82f6":"#2d3f52"}`}}>
-            <button onClick={()=>set("hasSpeaking",!form.hasSpeaking)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSpeaking?"#3b82f6":"#2d3f52",flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"#F4F6F9",borderRadius:8,border:`1px solid ${form.hasSpeaking?"#2979C8":"#D6DCE8"}`}}>
+            <button onClick={()=>set("hasSpeaking",!form.hasSpeaking)} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:form.hasSpeaking?"#2979C8":"#D6DCE8",flexShrink:0}}>
               <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:form.hasSpeaking?23:3,transition:"left 0.2s"}}/>
             </button>
-            <div><div style={{fontSize:14,color:"#e8dcc8",fontWeight:600}}>We have a speaking engagement</div></div>
+            <div style={{fontSize:14,color:"#002856",fontWeight:700}}>We have a speaking engagement</div>
           </div>
           {form.hasSpeaking&&<div style={{display:"grid",gap:12}}>
-            <div><label style={lbl}>Session Title</label><input value={form.speakingTitle||""} onChange={e=>set("speakingTitle",e.target.value)} placeholder="The Future of Student Transportation" style={inp}/></div>
-            <div><label style={lbl}>Speaker(s)</label><input value={form.speakingWho||""} onChange={e=>set("speakingWho",e.target.value)} placeholder="Edmund Dixon, Mary Beth Lisy" style={inp}/></div>
+            <div><label style={lbl}>Session Title</label><input value={form.speakingTitle||""} onChange={e=>set("speakingTitle",e.target.value)} style={inp}/></div>
+            <div><label style={lbl}>Speaker(s)</label><input value={form.speakingWho||""} onChange={e=>set("speakingWho",e.target.value)} style={inp}/></div>
             <div><label style={lbl}>When</label><input value={form.speakingWhen||""} onChange={e=>set("speakingWhen",e.target.value)} placeholder="Thursday Nov 7, 2:00 PM" style={inp}/></div>
           </div>}
-          {!form.hasSpeaking&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No speaking engagement for this show.</div>}
+          {!form.hasSpeaking&&<div style={{textAlign:"center",color:"#8A9BB8",fontSize:13,padding:"20px 0"}}>No speaking engagement for this show.</div>}
         </div>}
-
-        {/* ── BUDGET ── */}
         {section==="budget"&&<div style={{display:"grid",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {[["booth","Booth / Registration"],["travel","Travel"],["hotel","Hotel"],["swag","Swag / Materials"],["other","Sponsorship / Other"]].map(([k,label])=>(
-              <div key={k}><label style={lbl}>{label} ($)</label>
-                <input type="number" value={form.budget?.[k]||""} onChange={e=>setNested("budget",k,parseFloat(e.target.value)||0)} placeholder="0" style={inp}/>
-              </div>
+              <div key={k}><label style={lbl}>{label} ($)</label><input type="number" value={form.budget?.[k]||""} onChange={e=>setN("budget",k,parseFloat(e.target.value)||0)} placeholder="0" style={inp}/></div>
             ))}
-            <div style={{gridColumn:"1/-1",padding:"12px 16px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:14,color:"#8a9bb0"}}>Total</span>
-              <span style={{fontSize:20,fontWeight:700,color:"#c9a84c"}}>${(Object.values(form.budget||{}).reduce((a,b)=>a+(parseFloat(b)||0),0)).toLocaleString()}</span>
+            <div style={{gridColumn:"1/-1",padding:"12px 16px",background:"#002856",borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:14,color:"rgba(255,255,255,0.6)"}}>Total Budget</span>
+              <span style={{fontSize:22,fontWeight:800,color:"#FFD100",fontFamily:"'Barlow Condensed',sans-serif"}}>${(Object.values(form.budget||{}).reduce((a,b)=>a+(parseFloat(b)||0),0)).toLocaleString()}</span>
             </div>
           </div>
         </div>}
-
-        {/* ── REMINDERS ── */}
         {section==="reminders"&&<div style={{display:"grid",gap:12}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,alignItems:"end"}}>
             <div><label style={lbl}>New Reminder</label><input value={newRem.text} onChange={e=>setNewRem(r=>({...r,text:e.target.value}))} placeholder="e.g. Ship booth materials" style={inp}/></div>
             <div><label style={lbl}>Due Date</label><input type="date" value={newRem.date} onChange={e=>setNewRem(r=>({...r,date:e.target.value}))} style={inp}/></div>
-            <button onClick={addReminder} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"8px 16px",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>+ Add</button>
+            <button onClick={addRem} style={{background:"#002856",border:"none",color:"#FFD100",padding:"8px 16px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:13,whiteSpace:"nowrap"}}>+ Add</button>
           </div>
-          {form.reminders.length===0&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"20px 0"}}>No reminders yet.</div>}
-          {form.reminders.map((r,i)=>{
-            const days=daysUntil(r.date);
-            const overdue=!r.done&&days!==null&&days<0;
-            const soon=!r.done&&days!==null&&days<=3&&days>=0;
-            return <div key={r.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#0f1923",borderRadius:8,border:`1px solid ${overdue?"#ef444433":soon?"#f59e0b33":"#2d3f52"}`,opacity:r.done?0.5:1}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:r.done?"#22c55e":overdue?"#ef4444":soon?"#f59e0b":"#3b82f6",flexShrink:0}}/>
+          {form.reminders.length===0&&<div style={{textAlign:"center",color:"#8A9BB8",fontSize:13,padding:"20px 0"}}>No reminders yet.</div>}
+          {form.reminders.map((r,i)=>{const days=daysUntil(r.date),overdue=!r.done&&days!==null&&days<0,soon=!r.done&&days!==null&&days<=3&&days>=0;
+            return <div key={r.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F4F6F9",borderRadius:8,border:`1px solid ${overdue?"#D0021B33":soon?"#F5A62333":"#D6DCE8"}`,opacity:r.done?0.5:1}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:r.done?"#1A8C4E":overdue?"#D0021B":soon?"#F5A623":"#2979C8",flexShrink:0}}/>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,textDecoration:r.done?"line-through":"none"}}>{r.text}</div>
-                <div style={{fontSize:11,color:overdue?"#ef4444":soon?"#f59e0b":"#8a9bb0"}}>{fmtDate(r.date)}{overdue?" · OVERDUE":soon?` · ${days===0?"Today":`${days}d`}`:""}
-                </div>
+                <div style={{fontSize:13,color:"#002856",fontWeight:600,textDecoration:r.done?"line-through":"none"}}>{r.text}</div>
+                <div style={{fontSize:11,color:overdue?"#D0021B":soon?"#F5A623":"#8A9BB8"}}>{fmtDate(r.date)}{overdue?" · OVERDUE":soon?` · ${days===0?"Today":`${days}d`}`:""}</div>
               </div>
-              <button onClick={()=>toggleRem(i)} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>{r.done?"Undo":"Done"}</button>
-              <button onClick={()=>deleteRem(i)} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>✕</button>
+              <button onClick={()=>togRem(i)} style={{background:"transparent",border:"1px solid #D6DCE8",color:"#4A5F7A",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{r.done?"Undo":"Done"}</button>
+              <button onClick={()=>delRem(i)} style={{background:"transparent",border:"1px solid #FECACA",color:"#D0021B",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11}}>✕</button>
             </div>;
           })}
         </div>}
-
-        {/* ── RECEIPTS ── */}
         {section==="receipts"&&<div style={{display:"grid",gap:12}}>
-          <div className="receipt-zone"
-            onDrop={e=>{e.preventDefault();e.currentTarget.classList.remove("drag-over");handleReceiptFile(e.dataTransfer.files);}}
-            onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add("drag-over");}}
-            onDragLeave={e=>e.currentTarget.classList.remove("drag-over")}
-            onClick={()=>fileRef.current.click()}>
+          <div className="receipt-zone" onDrop={e=>{e.preventDefault();e.currentTarget.classList.remove("drag-over");handleFiles(e.dataTransfer.files);}} onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add("drag-over");}} onDragLeave={e=>e.currentTarget.classList.remove("drag-over")} onClick={()=>fileRef.current.click()}>
             <div style={{fontSize:28,marginBottom:8}}>🧾</div>
-            <div style={{color:"#8a9bb0",fontSize:13}}>Drop receipts here or <strong style={{color:"#c9a84c"}}>click to upload</strong></div>
-            <div style={{fontSize:11,color:"#4a5a6a",marginTop:4}}>PDF, images — up to 5MB each</div>
+            <div style={{color:"#4A5F7A",fontSize:13}}>Drop receipts here or <strong style={{color:"#002856"}}>click to upload</strong></div>
+            <div style={{fontSize:11,color:"#8A9BB8",marginTop:4}}>PDF, images — up to 5MB each</div>
           </div>
-          <input ref={fileRef} type="file" multiple style={{display:"none"}} onChange={e=>{handleReceiptFile(e.target.files);e.target.value="";}}/>
+          <input ref={fileRef} type="file" multiple style={{display:"none"}} onChange={e=>{handleFiles(e.target.files);e.target.value="";}}/>
           {form.receipts.map(r=>(
-            <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52"}}>
+            <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F4F6F9",borderRadius:8,border:"1px solid #D6DCE8"}}>
               <span style={{fontSize:18}}>{r.type?.includes("pdf")?"📄":r.type?.includes("image")?"🖼":"📎"}</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13}}>{r.name}</div>
-                <div style={{fontSize:11,color:"#8a9bb0"}}>{r.size}{r.addedAt?` · ${new Date(r.addedAt).toLocaleDateString()}`:""}</div>
-              </div>
-              <button onClick={()=>downloadReceipt(r)} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>⬇</button>
-              <button onClick={()=>deleteReceipt(r.id)} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>✕</button>
+              <div style={{flex:1}}><div style={{fontSize:13,color:"#002856",fontWeight:600}}>{r.name}</div><div style={{fontSize:11,color:"#8A9BB8"}}>{r.size}</div></div>
+              <button onClick={()=>{const a=document.createElement("a");a.href=r.data;a.download=r.name;a.click();}} style={{background:"transparent",border:"1px solid #D6DCE8",color:"#4A5F7A",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11}}>⬇</button>
+              <button onClick={()=>set("receipts",form.receipts.filter(x=>x.id!==r.id))} style={{background:"transparent",border:"1px solid #FECACA",color:"#D0021B",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11}}>✕</button>
             </div>
           ))}
-          {form.receipts.length===0&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"12px 0"}}>No receipts uploaded yet.</div>}
+          {form.receipts.length===0&&<div style={{textAlign:"center",color:"#8A9BB8",fontSize:13,padding:"12px 0"}}>No receipts uploaded yet.</div>}
         </div>}
-
-
-
-        {/* ── CHANGE LOG ── */}
         {section==="changelog"&&<div style={{display:"grid",gap:8}}>
-          {(!form.changeLog||form.changeLog.length===0)&&<div style={{textAlign:"center",color:"#4a5a6a",fontSize:13,padding:"32px 0"}}>No changes logged yet.</div>}
+          {(!form.changeLog||form.changeLog.length===0)&&<div style={{textAlign:"center",color:"#8A9BB8",fontSize:13,padding:"32px 0"}}>No changes logged yet.</div>}
           {(form.changeLog||[]).slice().reverse().map((c,i)=>(
-            <div key={i} style={{display:"flex",gap:10,padding:"8px 12px",background:"#0f1923",borderRadius:6,border:"1px solid #1a2d3d",fontSize:12}}>
-              <span style={{color:"#4a5a6a",fontFamily:"monospace",fontSize:10,whiteSpace:"nowrap",paddingTop:2}}>{new Date(c.ts).toLocaleString()}</span>
-              <span style={{color:"#8a9bb0",whiteSpace:"nowrap"}}>{c.user}</span>
-              <span style={{flex:1,color:"#e8dcc8"}}>{c.field}{c.newVal?`: ${c.oldVal||"—"} → ${c.newVal}`:""}</span>
+            <div key={i} style={{display:"flex",gap:10,padding:"8px 12px",background:"#F4F6F9",borderRadius:6,border:"1px solid #EEF1F6",fontSize:12}}>
+              <span style={{color:"#8A9BB8",fontFamily:"monospace",fontSize:10,whiteSpace:"nowrap",paddingTop:2}}>{new Date(c.ts).toLocaleString()}</span>
+              <span style={{color:"#4A5F7A",whiteSpace:"nowrap",fontWeight:600}}>{c.user}</span>
+              <span style={{flex:1,color:"#002856"}}>{c.field}{c.newVal?`: ${c.oldVal||"—"} → ${c.newVal}`:""}</span>
             </div>
           ))}
         </div>}
-
       </div>
-
-      {/* Footer */}
-      <div style={{padding:"14px 22px",borderTop:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+      <div style={{padding:"14px 22px",borderTop:"1px solid #EEF1F6",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8,background:"#F4F6F9",borderRadius:"0 0 12px 12px"}}>
         <div style={{display:"flex",gap:8}}>
-          {!isNew&&<button onClick={()=>onDelete(show.id)} style={{background:"#3d1515",border:"1px solid #7f1d1d",color:"#fca5a5",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Delete</button>}
-          {!isNew&&<button onClick={()=>generateICS(form)} style={{background:"#0f1923",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>📅 .ics</button>}
+          {!isNew&&<button onClick={()=>onDelete(show.id)} style={{background:"#FEE2E2",border:"1px solid #FECACA",color:"#D0021B",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>Delete</button>}
+          {!isNew&&<button onClick={()=>generateICS(form)} style={{background:"transparent",border:"1px solid #D6DCE8",color:"#4A5F7A",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>📅 .ics</button>}
         </div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onClose} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Cancel</button>
-          <button onClick={()=>onSave({...form,department:normalizeDept(form.department||"")})} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>💾 Save</button>
+          <button onClick={onClose} style={{background:"transparent",border:"1px solid #D6DCE8",color:"#4A5F7A",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>Cancel</button>
+          <button onClick={()=>onSave({...form,department:normalizeDept(form.department||"")})} style={{background:"#FFD100",border:"none",color:"#002856",padding:"7px 20px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:800,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>💾 SAVE</button>
         </div>
       </div>
     </div>
   </div>;
 }
-
-// ─── SETTINGS MODAL ───────────────────────────────────────────────────────────
+ 
 function SettingsModal({onClose,toast}){
-  const [s,setS]=useState(()=>({userName:"Matt Schiesl",teamsWebhook:"",notifyChanges:true,notifyReminders:true,...getSettings()}));
+  const [s,setS]=useState(()=>({userName:"",teamsWebhook:"",notifyChanges:true,notifyReminders:true,...getSettings()}));
   const set=(k,v)=>setS(prev=>({...prev,[k]:v}));
+  const [pwForm,setPwForm]=useState({current:"",next:"",confirm:""});
+  const setPw=(k,v)=>setPwForm(f=>({...f,[k]:v}));
+  const [pwErr,setPwErr]=useState("");
+  const [pwSuccess,setPwSuccess]=useState(false);
+ 
   const save=()=>{saveSettings(s);toast("Settings saved","success");onClose();};
-  const inp={width:"100%",background:"#0f1923",border:"1px solid #2d3f52",borderRadius:6,padding:"8px 12px",color:"#e8dcc8",fontSize:14,outline:"none"};
-  const lbl={fontSize:11,color:"#8a9bb0",textTransform:"uppercase",letterSpacing:1,marginBottom:4,display:"block"};
-  const testWebhook=async()=>{
-    if(!s.teamsWebhook){toast("Enter a webhook URL first","error");return;}
-    try{
-      await fetch(s.teamsWebhook,{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions",summary:"Test",themeColor:"F5A623",title:"✅ First Student Trade Show PMS — Test Notification",text:"Webhook connected successfully!"})});
-      toast("Test sent to Teams!","success");
-    }catch(e){toast("Webhook failed — check URL and CORS","error");}
+ 
+  const changePassword=()=>{
+    setPwErr("");setPwSuccess(false);
+    if(!pwForm.current){setPwErr("Enter your current password.");return;}
+    if(pwForm.current!==getPassword()){setPwErr("Current password is incorrect.");return;}
+    if(!pwForm.next||pwForm.next.length<6){setPwErr("New password must be at least 6 characters.");return;}
+    if(pwForm.next!==pwForm.confirm){setPwErr("New passwords don't match.");return;}
+    savePassword(pwForm.next);
+    setPwForm({current:"",next:"",confirm:""});
+    setPwSuccess(true);
+    toast("Password updated successfully","success");
   };
+ 
+  const inp={width:"100%",background:"#F4F6F9",border:"1.5px solid #D6DCE8",borderRadius:6,padding:"8px 12px",color:"#002856",fontSize:14,outline:"none"};
+  const lbl={fontSize:11,color:"#4A5F7A",textTransform:"uppercase",letterSpacing:0.8,marginBottom:4,display:"block",fontWeight:700};
+ 
   return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
     <div className="modal" style={{maxWidth:540}}>
-      <div style={{padding:"16px 22px",borderBottom:"1px solid #2d3f52",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <h2 style={{color:"#c9a84c",fontSize:17}}>⚙️ Settings</h2>
-        <button onClick={onClose} style={{background:"none",border:"none",color:"#8a9bb0",fontSize:24,cursor:"pointer"}}>×</button>
+      <div style={{padding:"16px 22px",borderBottom:"2px solid #FFD100",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#002856",borderRadius:"12px 12px 0 0"}}>
+        <h2 style={{color:"#FFD100",fontSize:17,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,letterSpacing:1}}>⚙️ SETTINGS</h2>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#FFD100",fontSize:24,cursor:"pointer"}}>×</button>
       </div>
-      <div style={{padding:"20px 22px",display:"grid",gap:16}}>
-        <div><label style={lbl}>Your Name</label><input value={s.userName||""} onChange={e=>set("userName",e.target.value)} style={inp}/></div>
-        <div>
-          <label style={lbl}>Microsoft Teams Webhook URL</label>
-          <p style={{fontSize:11,color:"#4a6a7a",marginBottom:8}}>Paste an Incoming Webhook URL to get Teams alerts on show changes and reminders. <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" target="_blank" rel="noreferrer" style={{color:"#3b82f6"}}>How to set up →</a></p>
-          <div style={{display:"flex",gap:8}}>
-            <input value={s.teamsWebhook||""} onChange={e=>set("teamsWebhook",e.target.value)} placeholder="https://outlook.office.com/webhook/…" style={{...inp,flex:1}}/>
-            <button onClick={testWebhook} style={{background:"#0f1923",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"8px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",whiteSpace:"nowrap"}}>Test</button>
-          </div>
+      <div style={{padding:"20px 22px",display:"grid",gap:20}}>
+ 
+        {/* General */}
+        <div style={{display:"grid",gap:12}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#002856",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif",borderBottom:"2px solid #FFD100",paddingBottom:6}}>General</div>
+          <div><label style={lbl}>Your Name</label><input value={s.userName||""} onChange={e=>set("userName",e.target.value)} style={inp}/></div>
+          <div><label style={lbl}>Microsoft Teams Webhook URL</label><input value={s.teamsWebhook||""} onChange={e=>set("teamsWebhook",e.target.value)} placeholder="https://outlook.office.com/webhook/…" style={inp}/></div>
+          {[["notifyChanges","Notify on show changes"],["notifyReminders","Notify on reminders"]].map(([k,label])=>(
+            <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#F4F6F9",borderRadius:8,border:"1px solid #D6DCE8"}}>
+              <span style={{fontSize:13,color:"#002856",fontWeight:600}}>{label}</span>
+              <button onClick={()=>set(k,!s[k])} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:s[k]?"#FFD100":"#D6DCE8",flexShrink:0}}>
+                <div style={{width:18,height:18,borderRadius:"50%",background:s[k]?"#002856":"white",position:"absolute",top:3,left:s[k]?23:3,transition:"left 0.2s"}}/>
+              </button>
+            </div>
+          ))}
         </div>
-        {[["notifyChanges","Notify on show changes"],["notifyReminders","Notify on reminders"]].map(([k,label])=>(
-          <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:"#0f1923",borderRadius:8,border:"1px solid #2d3f52"}}>
-            <span style={{fontSize:13}}>{label}</span>
-            <button onClick={()=>set(k,!s[k])} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",background:s[k]?"#c9a84c":"#2d3f52",flexShrink:0}}>
-              <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:s[k]?23:3,transition:"left 0.2s"}}/>
-            </button>
+ 
+        {/* Change Password */}
+        <div style={{display:"grid",gap:12}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#002856",textTransform:"uppercase",letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif",borderBottom:"2px solid #FFD100",paddingBottom:6}}>Change Password</div>
+          <div><label style={lbl}>Current Password</label><input type="password" value={pwForm.current} onChange={e=>setPw("current",e.target.value)} placeholder="Enter current password" style={{...inp,border:`1.5px solid ${pwErr&&!pwForm.current?"#D0021B":"#D6DCE8"}`}}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>New Password</label><input type="password" value={pwForm.next} onChange={e=>setPw("next",e.target.value)} placeholder="Min. 6 characters" style={inp}/></div>
+            <div><label style={lbl}>Confirm New Password</label><input type="password" value={pwForm.confirm} onChange={e=>setPw("confirm",e.target.value)} placeholder="Repeat new password" style={inp}/></div>
           </div>
-        ))}
+          {pwErr&&<div style={{fontSize:12,color:"#D0021B",background:"#FEE2E2",border:"1px solid #FECACA",borderRadius:6,padding:"8px 12px",fontWeight:600}}>⚠️ {pwErr}</div>}
+          {pwSuccess&&<div style={{fontSize:12,color:"#1A8C4E",background:"#E6F4ED",border:"1px solid #1A8C4E44",borderRadius:6,padding:"8px 12px",fontWeight:600}}>✅ Password updated! Use the new password next time you log in.</div>}
+          <button onClick={changePassword} style={{background:"#002856",border:"none",color:"#FFD100",padding:"9px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:800,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5,alignSelf:"start"}}>UPDATE PASSWORD</button>
+        </div>
+ 
       </div>
-      <div style={{padding:"14px 22px",borderTop:"1px solid #2d3f52",display:"flex",justifyContent:"flex-end",gap:10}}>
-        <button onClick={onClose} style={{background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>Cancel</button>
-        <button onClick={save} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>Save Settings</button>
+      <div style={{padding:"14px 22px",borderTop:"1px solid #EEF1F6",display:"flex",justifyContent:"flex-end",gap:10,background:"#F4F6F9",borderRadius:"0 0 12px 12px"}}>
+        <button onClick={onClose} style={{background:"transparent",border:"1px solid #D6DCE8",color:"#4A5F7A",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600}}>Cancel</button>
+        <button onClick={save} style={{background:"#FFD100",border:"none",color:"#002856",padding:"7px 18px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:800,fontFamily:"'Barlow Condensed',sans-serif"}}>SAVE SETTINGS</button>
       </div>
     </div>
   </div>;
 }
-
-// ─── PASSWORD GATE ────────────────────────────────────────────────────────────
+ 
 function getAuthed(){try{return sessionStorage.getItem("ts_auth")==="1";}catch(e){return false;}}
 function setAuthed(){try{sessionStorage.setItem("ts_auth","1");}catch(e){}}
+ 
 function LoginScreen({onAuth}){
-  const [pw,setPw]=useState("");
-  const [err,setErr]=useState(false);
-  const attempt=()=>{if(pw===PASSWORD){setAuthed();onAuth();}else{setErr(true);setPw("");setTimeout(()=>setErr(false),2000);}};
-  return <div style={{minHeight:"100vh",background:"#0f1923",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"#1a2d3d",border:"1px solid #c9a84c",borderRadius:12,padding:"40px 48px",width:"100%",maxWidth:400,textAlign:"center"}}>
-      <div style={{fontSize:36,marginBottom:12}}>🗓️</div>
-      <h1 style={{fontSize:22,fontWeight:700,color:"#c9a84c",marginBottom:6}}>First Student</h1>
-      <p style={{color:"#8a9bb0",fontSize:14,marginBottom:28}}>Trade Show PMS</p>
+  const [pw,setPw]=useState(""),[err,setErr]=useState(false);
+  const attempt=()=>{if(pw===getPassword()){setAuthed();onAuth();}else{setErr(true);setPw("");setTimeout(()=>setErr(false),2000);}};
+  return <div className="login-wrap">
+    <div style={{background:"#fff",borderRadius:16,padding:"48px 52px",width:"100%",maxWidth:420,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)",position:"relative",zIndex:1}}>
+      <div style={{marginBottom:24,display:"flex",justifyContent:"center"}}>
+        <svg viewBox="0 0 220 58" width="210" height="55" xmlns="http://www.w3.org/2000/svg">
+          <rect width="220" height="58" rx="6" fill="#002856"/>
+          <text x="12" y="38" fontFamily="'Barlow Condensed',Barlow,sans-serif" fontSize="30" fontWeight="800" fill="#FFD100" letterSpacing="1">FIRST STUDENT</text>
+          <rect x="12" y="44" width="196" height="3" fill="#FFD100" opacity="0.6"/>
+        </svg>
+      </div>
+      <p style={{color:"#4A5F7A",fontSize:14,marginBottom:28,fontWeight:600}}>Trade Show Management System</p>
       <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&attempt()} placeholder="Enter password"
-        style={{width:"100%",background:"#0f1923",border:`1.5px solid ${err?"#ef4444":"#2d3f52"}`,borderRadius:8,padding:"11px 16px",color:"#e8dcc8",fontSize:15,outline:"none",fontFamily:"inherit",marginBottom:12,textAlign:"center"}}/>
-      {err&&<p style={{color:"#ef4444",fontSize:13,marginBottom:8}}>Incorrect password.</p>}
-      <button onClick={attempt} style={{width:"100%",background:"#c9a84c",border:"none",color:"#0f1923",padding:"11px",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:700,fontFamily:"inherit"}}>Enter</button>
+        style={{width:"100%",background:"#F4F6F9",border:`2px solid ${err?"#D0021B":"#D6DCE8"}`,borderRadius:8,padding:"12px 16px",color:"#002856",fontSize:15,outline:"none",marginBottom:12,textAlign:"center",fontWeight:600,transition:"border-color 0.2s"}}/>
+      {err&&<p style={{color:"#D0021B",fontSize:13,marginBottom:8,fontWeight:600}}>Incorrect password.</p>}
+      <button onClick={attempt} style={{width:"100%",background:"#FFD100",border:"none",color:"#002856",padding:"12px",borderRadius:8,cursor:"pointer",fontSize:15,fontWeight:800,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>ENTER</button>
     </div>
   </div>;
 }
-
-// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
-function exportData(shows){
-  const json=JSON.stringify(shows,null,2);
-  const blob=new Blob([json],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=`fs-tradeshows-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
-}
-function importDataFile(file,onSuccess,onError){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      const data=JSON.parse(e.target.result);
-      if(!Array.isArray(data))throw new Error("invalid");
-      onSuccess(data.map(s=>({...s,department:normalizeDept(s.department||"")})));
-    }catch(err){onError("Could not read file.");}
-  };
-  reader.readAsText(file);
-}
-
-// ─── TEAMS NOTIFY ─────────────────────────────────────────────────────────────
-async function sendTeams(webhook,title,message){
-  if(!webhook)return;
-  try{await fetch(webhook,{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions",summary:title,themeColor:"F5A623",
-      title:`🗓 First Student Trade Shows — ${title}`,text:message})});}catch(e){}
-}
-
-// ─── APP ──────────────────────────────────────────────────────────────────────
+ 
+function exportData(shows){const blob=new Blob([JSON.stringify(shows,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`fs-tradeshows-${new Date().toISOString().slice(0,10)}.json`;a.click();}
+function importDataFile(file,onSuccess,onError){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!Array.isArray(d))throw new Error();onSuccess(d.map(s=>({...s,department:normalizeDept(s.department||"")})));}catch(err){onError("Could not read file.");}};r.readAsText(file);}
+ 
 function App(){
   const [authed,setAuthed]=useState(getAuthed);
-  const [shows,setShows]=useState(()=>{
-    const stored=getStored();
-    return (stored||INITIAL_SHOWS).map(s=>({...s,department:normalizeDept(s.department||"")}));
-  });
+  const [shows,setShows]=useState(()=>(getStored()||INITIAL_SHOWS).map(s=>({...s,department:normalizeDept(s.department||"")})));
   const [tab,setTab]=useState("calendar");
   const [editShow,setEditShow]=useState(null);
   const [modalOpen,setModalOpen]=useState(false);
@@ -903,121 +647,68 @@ function App(){
   const [nextId,setNextId]=useState(()=>Math.max(0,...(getStored()||INITIAL_SHOWS).map(s=>s.id||0))+1);
   const [toastMsg,setToastMsg]=useState(null);
   const fileRef=useRef();
-
   useEffect(()=>{saveStored(shows);},[shows]);
-
-  if(!authed) return <LoginScreen onAuth={()=>setAuthed(true)}/>;
-
+  if(!authed)return <LoginScreen onAuth={()=>setAuthed(true)}/>;
   const sorted=[...shows].sort((a,b)=>a.start.localeCompare(b.start));
-  const alerts=generateAlerts(shows);
-  const settings=getSettings();
-
+  const alerts=generateAlerts(shows),settings=getSettings();
   const toast=(msg,type="info")=>setToastMsg({msg,type});
-
   const openEdit=s=>{setEditShow(s);setIsNew(false);setModalOpen(true);};
   const openNew=()=>{setEditShow(null);setIsNew(true);setModalOpen(true);};
-
   const handleSave=form=>{
-    const normalized={...form,department:normalizeDept(form.department||"")};
-    if(isNew){
-      const newShow={...normalized,id:nextId,changeLog:[{user:settings.userName||"User",field:"Show created",oldVal:"",newVal:"",ts:Date.now()}]};
-      setShows(s=>[...s,newShow].sort((a,b)=>a.start.localeCompare(b.start)));
-      setNextId(n=>n+1);
-      toast(`${form.name} added`,"success");
-      sendTeams(settings.teamsWebhook,`New Show: ${form.name}`,`Added ${form.name} — ${form.start} in ${form.city||"TBD"}`);
-    }else{
-      const old=shows.find(x=>x.id===normalized.id);
-      const changes=[];
-      if(old){
-        if(old.status!==normalized.status) changes.push({user:settings.userName||"User",field:"Status",oldVal:old.status,newVal:normalized.status,ts:Date.now()});
-        if(old.location!==normalized.city) changes.push({user:settings.userName||"User",field:"City",oldVal:old.city,newVal:normalized.city,ts:Date.now()});
-        if(old.hotel?.confirmNumber!==normalized.hotel?.confirmNumber&&normalized.hotel?.confirmNumber)
-          changes.push({user:settings.userName||"User",field:"Hotel confirmed",oldVal:old.hotel?.confirmNumber||"—",newVal:normalized.hotel?.confirmNumber,ts:Date.now()});
-      }
-      const updatedShow={...normalized,changeLog:[...(normalized.changeLog||[]),...changes]};
-      setShows(s=>s.map(x=>x.id===normalized.id?updatedShow:x));
-      toast(`${form.name} saved`,"success");
-      if(changes.length&&settings.notifyChanges)
-        sendTeams(settings.teamsWebhook,`${form.name} Updated`,changes.map(c=>`**${c.field}**: ${c.oldVal||"—"} → ${c.newVal}`).join("\n"));
-    }
+    const norm={...form,department:normalizeDept(form.department||"")};
+    if(isNew){setShows(s=>[...s,{...norm,id:nextId,changeLog:[{user:settings.userName||"User",field:"Show created",oldVal:"",newVal:"",ts:Date.now()}]}].sort((a,b)=>a.start.localeCompare(b.start)));setNextId(n=>n+1);toast(`${form.name} added`,"success");}
+    else{const old=shows.find(x=>x.id===norm.id),changes=[];if(old&&old.status!==norm.status)changes.push({user:settings.userName||"User",field:"Status",oldVal:old.status,newVal:norm.status,ts:Date.now()});setShows(s=>s.map(x=>x.id===norm.id?{...norm,changeLog:[...(norm.changeLog||[]),...changes]}:x));toast(`${form.name} saved`,"success");}
     setModalOpen(false);
   };
-
-  const handleDelete=id=>{
-    const s=shows.find(x=>x.id===id);
-    if(confirm(`Delete "${s?.name}"? This cannot be undone.`)){
-      setShows(s=>s.filter(x=>x.id!==id));
-      setModalOpen(false);
-      toast(`${s?.name} deleted`,"warning");
-    }
-  };
-
-  const handleImport=e=>{
-    const file=e.target.files[0];if(!file)return;
-    importDataFile(file,data=>{
-      if(!confirm(`Replace all ${shows.length} shows with ${data.length} imported shows?`))return;
-      setShows(data.sort((a,b)=>a.start.localeCompare(b.start)));
-      setNextId(Math.max(0,...data.map(s=>s.id||0))+1);
-      toast(`Imported ${data.length} shows`,"success");
-    },msg=>toast(msg,"error"));
-    e.target.value="";
-  };
-
-  const TABS=[
-    {id:"calendar",label:"📅 Calendar"},
-    {id:"cards",label:"📋 Cards"},
-    {id:"attendees",label:"👥 Attendees"},
-    {id:"alerts",label:`⚡ Alerts${alerts.length>0?` (${alerts.length})`:""}`,alert:alerts.length>0},
-  ];
-  const tabBase={padding:"10px 20px",borderRadius:"6px 6px 0 0",fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",background:"transparent",color:"#8a9bb0",fontWeight:400,transition:"all 0.15s"};
-  const tabOn={...tabBase,background:"#1a2d3d",color:"#c9a84c",fontWeight:700,borderBottom:"2px solid #c9a84c"};
-  const toolBtn={background:"transparent",border:"1px solid #2d3f52",color:"#8a9bb0",padding:"6px 13px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"inherit",transition:"all 0.15s"};
-
-  return <div style={{minHeight:"100vh",background:"#0f1923"}}>
-    {/* Header */}
-    <div style={{background:"linear-gradient(135deg,#1a2d3d,#0f1923)",borderBottom:"2px solid #c9a84c",padding:"22px 32px 0"}}>
+  const handleDelete=id=>{const s=shows.find(x=>x.id===id);if(confirm(`Delete "${s?.name}"?`)){setShows(s=>s.filter(x=>x.id!==id));setModalOpen(false);toast(`${s?.name} deleted`,"warning");}};
+  const handleImport=e=>{const file=e.target.files[0];if(!file)return;importDataFile(file,data=>{if(!confirm(`Replace ${shows.length} shows with ${data.length} imported?`))return;setShows(data.sort((a,b)=>a.start.localeCompare(b.start)));setNextId(Math.max(0,...data.map(s=>s.id||0))+1);toast(`Imported ${data.length} shows`,"success");},msg=>toast(msg,"error"));e.target.value="";};
+ 
+  const TABS=[{id:"calendar",label:"📅 Calendar"},{id:"cards",label:"📋 Cards"},{id:"attendees",label:"👥 Attendees"},{id:"alerts",label:`⚡ Alerts${alerts.length>0?` (${alerts.length})`:""}`,alert:alerts.length>0}];
+ 
+  return <div style={{minHeight:"100vh",background:"#F4F6F9"}}>
+    <div style={{background:"#002856",borderBottom:"4px solid #FFD100",padding:"0 32px"}}>
       <div style={{maxWidth:1280,margin:"0 auto"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:12}}>
-          <div>
-            <h1 style={{fontSize:28,fontWeight:700,color:"#c9a84c",letterSpacing:"-0.5px"}}>First Student Trade Show PMS</h1>
-            <p style={{color:"#8a9bb0",fontSize:13,marginTop:2}}>{shows.length} conferences · {alerts.length>0?<span style={{color:"#ef4444",fontWeight:700}}>{alerts.length} alert{alerts.length!==1?"s":""}</span>:"all clear"}</p>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 0 14px",flexWrap:"wrap",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <svg viewBox="0 0 160 42" width="160" height="42" xmlns="http://www.w3.org/2000/svg">
+              <text x="0" y="30" fontFamily="'Barlow Condensed',Barlow,sans-serif" fontSize="26" fontWeight="800" fill="#FFD100" letterSpacing="0.5">FIRST STUDENT</text>
+              <rect x="0" y="34" width="156" height="2" fill="#FFD100" opacity="0.5"/>
+            </svg>
+            <div style={{borderLeft:"1px solid rgba(255,255,255,0.2)",paddingLeft:16}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#fff",letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif"}}>TRADE SHOW PMS</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:1}}>{shows.length} conferences · {alerts.length>0?<span style={{color:"#FFD100",fontWeight:700}}>{alerts.length} alert{alerts.length!==1?"s":""}</span>:"all clear"}</div>
+            </div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>exportData(shows)} style={toolBtn}>⬇ Export</button>
-            <button onClick={()=>fileRef.current.click()} style={toolBtn}>⬆ Import</button>
+            <button onClick={()=>exportData(shows)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>⬇ Export</button>
+            <button onClick={()=>fileRef.current.click()} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>⬆ Import</button>
             <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/>
-            <button onClick={()=>setSettingsOpen(true)} style={toolBtn}>⚙️ Settings</button>
-            <button onClick={openNew} style={{background:"#c9a84c",border:"none",color:"#0f1923",padding:"9px 18px",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}}>+ Add Show</button>
+            <button onClick={()=>setSettingsOpen(true)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",padding:"7px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>⚙️ Settings</button>
+            <button onClick={openNew} style={{background:"#FFD100",border:"none",color:"#002856",padding:"9px 20px",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:800,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>+ ADD SHOW</button>
           </div>
         </div>
-        <div style={{display:"flex",gap:2,marginTop:14}}>
-          {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{...(tab===t.id?tabOn:tabBase),color:t.alert&&tab!==t.id?"#ef4444":tab===t.id?"#c9a84c":"#8a9bb0"}}>{t.label}</button>)}
+        <div style={{display:"flex",gap:0}}>
+          {TABS.map(t=>{const active=tab===t.id;return <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 22px",fontSize:13,cursor:"pointer",fontFamily:"'Barlow',sans-serif",fontWeight:700,border:"none",background:active?"#FFD100":"transparent",color:t.alert&&!active?"#FFD100":active?"#002856":"rgba(255,255,255,0.7)",borderRadius:active?"6px 6px 0 0":"6px 6px 0 0",letterSpacing:0.3,transition:"all 0.15s"}}>{t.label}</button>;})}
         </div>
       </div>
     </div>
-
-    {/* Tip bar */}
-    <div style={{background:"#0d1f2d",borderBottom:"1px solid #1a2d3d",padding:"8px 32px"}}>
-      <div style={{maxWidth:1280,margin:"0 auto",fontSize:11,color:"#4a6a7a"}}>
-        💡 <strong style={{color:"#5a8a9a"}}>Export</strong> to save your data · <strong style={{color:"#5a8a9a"}}>Import</strong> to sync across computers · Re-upload to GitHub to publish updates for the team
+    <div style={{background:"#fff",borderBottom:"1px solid #EEF1F6",padding:"7px 32px"}}>
+      <div style={{maxWidth:1280,margin:"0 auto",fontSize:11,color:"#8A9BB8",fontWeight:600}}>
+        💡 <strong style={{color:"#002856"}}>Export</strong> to save your data · <strong style={{color:"#002856"}}>Import</strong> to sync across computers · Re-upload to GitHub Pages to share updates with the team
       </div>
     </div>
-
-    {/* Content */}
     <div style={{maxWidth:1280,margin:"0 auto",padding:"24px 32px"}}>
       {tab==="calendar"&&<CalendarView shows={sorted} onEdit={openEdit}/>}
       {tab==="cards"&&<CardView shows={sorted} onEdit={openEdit}/>}
       {tab==="attendees"&&<AttendeesView shows={sorted} onEdit={openEdit}/>}
       {tab==="alerts"&&<AlertsView shows={sorted} onEdit={openEdit}/>}
     </div>
-
-    {/* Modals */}
     {modalOpen&&<EditModal show={isNew?null:editShow} onSave={handleSave} onClose={()=>setModalOpen(false)} onDelete={handleDelete} toast={toast}/>}
     {settingsOpen&&<SettingsModal onClose={()=>setSettingsOpen(false)} toast={toast}/>}
     {toastMsg&&<Toast msg={toastMsg.msg} type={toastMsg.type} onDone={()=>setToastMsg(null)}/>}
   </div>;
 }
-
+ 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
